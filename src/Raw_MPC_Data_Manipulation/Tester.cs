@@ -11,5 +11,16 @@ public class Tester
         path = "/Users/braeogle/Desktop/MPC-Plus/data/NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x";
         BeamCaller BC_15x_test = new BeamCaller(path);
         BC_15x_test.RunTest();
+
+        Console.WriteLine("Exception Test 1");
+        path = "bad_Path";
+        BeamCaller bc_except_test1 = new BeamCaller(path);
+        bc_except_test1.Run();
+
+        Console.WriteLine("Exception Test 2");
+        path = "6e_bad_Path";
+        BeamCaller bc_except_test2 = new BeamCaller(path);
+        bc_except_test2.Run();
+
     }
 }
