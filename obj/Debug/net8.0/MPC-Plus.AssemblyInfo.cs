@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MPC-Plus")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ee05aa0246693fae5938fb181bb3f41a93c07acd")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+28d534b3c6a3e34ad19d32a36ae71f3cfd9e8171")]
 [assembly: System.Reflection.AssemblyProductAttribute("MPC-Plus")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MPC-Plus")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
