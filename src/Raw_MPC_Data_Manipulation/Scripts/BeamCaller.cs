@@ -1,4 +1,5 @@
 using System;
+using MPC_Plus.Exceptions;
 
 public class BeamCaller
 {
@@ -102,7 +103,7 @@ public class BeamCaller
         }
         else
         {
-            //throw new NoPathGivenException($"Failed to load XML file at path: {pathName}", ex); 
+            throw new NoPathGivenException($"Failed to load XML file at path: {pathName}"); 
         }
     }
 
@@ -193,7 +194,7 @@ public class BeamCaller
         }
         else
         {
-            //throw new NoPathGivenException($"Failed to load XML file at path: {pathName}", ex); 
+            throw new NoPathGivenException($"Failed to load XML file at path: {pathName}"); 
         }
 
     }

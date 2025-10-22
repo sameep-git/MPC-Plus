@@ -1,5 +1,6 @@
 using System;
 using System.Xml;
+using MPC_Plus.Exceptions;
 
 public class Beam_15x_Data_Extraction : X_Data_Extraction
 {
@@ -21,7 +22,7 @@ public class Beam_15x_Data_Extraction : X_Data_Extraction
     // Default constructor (optional)
     public Beam_15x_Data_Extraction()
     {
-        // throw new NoPathGivenException();
+        throw new NoPathGivenException($"Failed to load XML file at path: {pathName}");
     }
 
     // Load XML and populate the decimal values
@@ -40,13 +41,15 @@ public class Beam_15x_Data_Extraction : X_Data_Extraction
         XmlNode outputNode = doc.GetElementsByTagName("RelativeOutput")[0];
         if (!decimal.TryParse(outputNode.InnerText, out decimal outputValue))
             throw new Exception("Invalid decimal value in RelativeOutput node.");
-        RelativeOutput = outputValue;
+        //!!!! Explain this formula
+        RelativeOutput = (outputValue - 1) * 100;
 
         // Get first <RelativeUniformity> node
         XmlNode uniformityNode = doc.GetElementsByTagName("RelativeUniformity")[0];
         if (!decimal.TryParse(uniformityNode.InnerText, out decimal uniformityValue))
             throw new Exception("Invalid decimal value in RelativeUniformity node.");
-        RelativeUniformity = uniformityValue;
+        //Convert to Percentage
+        RelativeUniformity = uniformityValue * 100;
         
         //Calculate and Set center shift
         CenterShift = calculateCenterShift();
@@ -57,26 +60,25 @@ public class Beam_15x_Data_Extraction : X_Data_Extraction
         decimal isoX, isoY;
         decimal shift;
         
+        // Create a namespace manager to handle the "http:/www.varian.com/MPC" namespace
+        XmlNamespaceManager ns = new XmlNamespaceManager(doc.NameTable);
+        ns.AddNamespace("v", "http:/www.varian.com/MPC");
 
-        // Extract BaselineIsoCenter
-        XmlNode baselineNode = doc.SelectSingleNode("//BaselineIsoCenter");
-        if (baselineNode == null)
-        {
-            Console.WriteLine("<BaselineIsoCenter> node not found.");
-            return -1; //FIX LATER
-        }
-        baselineX = decimal.Parse(baselineNode["X"].InnerText);
-        baselineY = decimal.Parse(baselineNode["Y"].InnerText);
+        // Select the BaselineIsoCenter and IsoCenter nodes
+        XmlNode baselineNode = doc.SelectSingleNode("//v:BaselineIsoCenter", ns);
+        XmlNode isoNode = doc.SelectSingleNode("//v:IsoCenter", ns);
 
-        // Extract IsoCenter
-        XmlNode isoNode = doc.SelectSingleNode("//IsoCenter");
-        if (isoNode == null)
+        if (baselineNode != null && isoNode != null)
         {
-            Console.WriteLine("<IsoCenter> node not found.");
-            return -1; //FIX????
+            baselineX = decimal.Parse(baselineNode.SelectSingleNode("v:X", ns).InnerText);
+            baselineY = decimal.Parse(baselineNode.SelectSingleNode("v:Y", ns).InnerText);
+            isoX = decimal.Parse(isoNode.SelectSingleNode("v:X", ns).InnerText);
+            isoY = decimal.Parse(isoNode.SelectSingleNode("v:Y", ns).InnerText);
         }
-        isoX = decimal.Parse(isoNode["X"].InnerText);
-        isoY = decimal.Parse(isoNode["Y"].InnerText);
+        else
+        {
+            return -1;
+        }
 
         // Compute deltas
         decimal deltaX = isoX - baselineX;

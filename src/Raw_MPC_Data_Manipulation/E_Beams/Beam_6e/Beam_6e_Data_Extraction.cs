@@ -1,5 +1,6 @@
 using System;
 using System.Xml;
+using MPC_Plus.Exceptions;
 
 public class Beam_6e_Data_Extraction : E_Data_Extraction
 {
@@ -20,7 +21,7 @@ public class Beam_6e_Data_Extraction : E_Data_Extraction
     // Default constructor (optional)
     public Beam_6e_Data_Extraction()
     {
-        // throw new NoPathGivenException();
+        throw new NoPathGivenException($"Failed to load XML file at path: {pathName}");
     }
 
     // Load XML and populate the decimal values
@@ -39,13 +40,15 @@ public class Beam_6e_Data_Extraction : E_Data_Extraction
         XmlNode outputNode = doc.GetElementsByTagName("RelativeOutput")[0];
         if (!decimal.TryParse(outputNode.InnerText, out decimal outputValue))
             throw new Exception("Invalid decimal value in RelativeOutput node.");
-        RelativeOutput = outputValue;
+        //!!!! Explain this formula
+        RelativeOutput = ((outputValue - 1) * 100 ) * 100;
 
         // Get first <RelativeUniformity> node
         XmlNode uniformityNode = doc.GetElementsByTagName("RelativeUniformity")[0];
         if (!decimal.TryParse(uniformityNode.InnerText, out decimal uniformityValue))
             throw new Exception("Invalid decimal value in RelativeUniformity node.");
-        RelativeUniformity = uniformityValue;
+        //Convert to Percentage
+        RelativeUniformity = uniformityValue * 100;
     }
 
     // Test method to print the values
