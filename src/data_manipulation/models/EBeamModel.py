@@ -21,6 +21,11 @@ class EBeamModel:
     
     def get_relative_out(self):
         return self._relative_out
+
+    def _getDateFromPathName(self, path):
+        # TODO: Implement date extraction logic from path
+        # This method should parse the path and extract the date
+        pass
     
     # Setters
     def set_type(self, type_value):
@@ -34,8 +39,18 @@ class EBeamModel:
     
     def set_relative_out(self, relative_out):
         self._relative_out = Decimal(str(relative_out))
-    
-    def _getDateFromPathName(self, path):
-        # TODO: Implement date extraction logic from path
-        # This method should parse the path and extract the date
-        pass
+
+    # Calculations
+    def beam_output_change(self):
+        """
+        Calculates beam output change percentage.
+        Formula: (relative_output - 1) * 100
+        """
+        return (self._relative_out - Decimal('1.0')) * Decimal('100.0')
+
+    def beam_uniformity_change(self):
+        """
+        Calculates beam uniformity change percentage.
+        Formula: relative_uniformity * 100
+        """
+        return self._relative_uniformity * Decimal('100.0')
