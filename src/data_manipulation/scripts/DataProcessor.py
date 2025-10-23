@@ -1,28 +1,32 @@
 from os import name
-from Extractor import Extractor
+from data_manipulation.scripts.Extractor import Extractor
 #from Uploader import Uploader
-from ..models import EBeamModel
-#from XBeam import XBeam
+from data_manipulation.models.EBeamModel import EBeamModel
+from data_manipulation.models.XBeamModel import XBeamModel
 #from Geo6xfff import Geo6xfff
 
 class DataProcessor:
 
     def __init__(self, path):
-        self.path = path
+        self.path = path + "\\Results.xml"
         self.ex = Extractor()
-        self.up = Uploader()
+        #self.up = Uploader()
 
     def Run(self):
-        if(self.path.contains("6e")):
-            beam6e = EBeam()
-            beam6e.setPath(self.path)
-            beam6e.setType("6e")
-            beam6e.setDate(self._getDateFromPathName(self.path)); #Sets date based on date in the path name
-            ex.extract(beam6e);
+        if("6e" in self.path):
+            print("6e Beam detected")
+            beam6e = EBeamModel()
+            beam6e.set_path(self.path)
+            beam6e.set_type("6e")
+            beam6e.set_date(beam6e._getDateFromPathName(self.path)); #Sets date based on date in the path name
+            self.ex.eModelExtraction(beam6e);
             #beam6e.upload();
-        elif(self.path.contains("15x")):
-            beam15x = XBeam()
-            beam15x.setPath(self.path)
-            beam15x.setType("15x")
-            beam15x.setDate(); #Sets date based on date in the path name
+        elif("15x" in self.path):
+            print("15x Beam detected")
+            beam15x = XBeamModel()
+            beam15x.set_path(self.path)
+            beam15x.set_type("6e")
+            beam15x.set_date(beam15x._getDateFromPathName(self.path)); #Sets date based on date in the path name
+            self.ex.xModelExtraction(beam15x);
+            #beam6e.upload();
         
