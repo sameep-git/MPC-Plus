@@ -19,9 +19,12 @@ class EBeamModel:
     def get_relative_uniformity(self):
         return self._relative_uniformity
     
-    def get_relative_out(self):
+    def get_relative_output(self):
         return self._relative_out
 
+    def get_path(self):
+        return self._path
+      
     def _getDateFromPathName(self, path):
         # TODO: Implement date extraction logic from path
         # This method should parse the path and extract the date
@@ -31,11 +34,14 @@ class EBeamModel:
     def set_type(self, type_value):
         self._type = type_value
     
+    def set_path(self, path):
+        self._path = path
+
     def set_date(self, date):
         self._date = date
     
     def set_relative_uniformity(self, relative_uniformity):
-        self._relative_uniformity = Decimal(str(relative_uniformity))
+        self._relative_uniformity = relative_uniformity
     
     def set_relative_out(self, relative_out):
         self._relative_out = Decimal(str(relative_out))
