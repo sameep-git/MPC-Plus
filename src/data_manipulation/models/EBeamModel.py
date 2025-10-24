@@ -5,9 +5,10 @@ class EBeamModel:
     
     def __init__(self):
         self._type = ""
+        self._path = ""
         self._date = None
         self._relative_uniformity = Decimal('0.0')
-        self._relative_out = Decimal('0.0')
+        self._relative_output = Decimal('0.0')
     
     # Getters
     def get_type(self):
@@ -20,7 +21,7 @@ class EBeamModel:
         return self._relative_uniformity
     
     def get_relative_output(self):
-        return self._relative_out
+        return self._relative_output
 
     def get_path(self):
         return self._path
@@ -43,20 +44,6 @@ class EBeamModel:
     def set_relative_uniformity(self, relative_uniformity):
         self._relative_uniformity = relative_uniformity
     
-    def set_relative_out(self, relative_out):
-        self._relative_out = Decimal(str(relative_out))
+    def set_relative_output(self, relative_output):
+        self._relative_output = relative_output
 
-    # Calculations
-    def beam_output_change(self):
-        """
-        Calculates beam output change percentage.
-        Formula: (relative_output - 1) * 100
-        """
-        return (self._relative_out - Decimal('1.0')) * Decimal('100.0')
-
-    def beam_uniformity_change(self):
-        """
-        Calculates beam uniformity change percentage.
-        Formula: relative_uniformity * 100
-        """
-        return self._relative_uniformity * Decimal('100.0')
