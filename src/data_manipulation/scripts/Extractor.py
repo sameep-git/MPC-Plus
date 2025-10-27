@@ -24,7 +24,6 @@ class Extractor:
                     value = row.get(' Value', '')
                     # Check for relative output (BeamOutputChange)
                     if 'BeamOutputChange' in name:
-                        print(value)
                         try:
                             eBeam.set_relative_output(Decimal(value))
                         except (ValueError, TypeError, decimal.InvalidOperation):
@@ -62,7 +61,6 @@ class Extractor:
                     value = row.get(' Value', '')
                     # Check for relative output (BeamOutputChange)
                     if 'BeamOutputChange' in name:
-                        print(value)
                         try:
                             eBeam.set_relative_output(Decimal(value))
                         except (ValueError, TypeError, decimal.InvalidOperation):
@@ -93,7 +91,6 @@ class Extractor:
         try:
             # Get the path from the eBeam object
             path = xBeam.get_path()
-            print(path)
             
             # Parse the CSV file
             with open(path, 'r', newline='', encoding='utf-8') as csvfile:
