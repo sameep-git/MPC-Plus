@@ -103,6 +103,7 @@ Examples:
   python src/main.py start           # Start folder monitoring
   python src/main.py start --path custom_folder  # Monitor custom folder
   python src/main.py start --background          # Run in background
+  python -m src.data_manipulation.file_monitoring.main start
         """
     )
     

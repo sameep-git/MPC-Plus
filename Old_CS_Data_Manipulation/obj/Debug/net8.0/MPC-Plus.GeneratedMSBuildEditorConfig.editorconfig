@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = MPC_Plus
-build_property.ProjectDir = /Users/braeogle/Desktop/MPC-Plus/
+build_property.ProjectDir = /Users/braeogle/Desktop/MPC-Plus/Old_CS_Data_Manipulation/
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

@@ -5,6 +5,8 @@ from decimal import Decimal
 import math
 
 class Extractor:
+
+    
     
     def eModelExtraction(self, eBeam):
         """
