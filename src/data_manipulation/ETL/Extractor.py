@@ -1,3 +1,19 @@
+"""
+Extractor Module
+----------------
+This module defines the `Extractor` class, responsible for reading and parsing
+beam data from CSV files and populating model objects (EBeamModel, XBeamModel,
+Geo6xfffModel) with corresponding numerical values.
+
+Each extractor method is tailored to a specific beam type and calls the
+appropriate model's setter methods based on CSV field names.
+
+Supported beam models:
+    - Electron beams: `EBeamModel`
+    - X-ray beams: `XBeamModel`
+    - Geometric beams: `Geo6xfffModel`
+"""
+
 import xml.etree.ElementTree as ET
 import csv
 import decimal
@@ -5,9 +21,13 @@ from decimal import Decimal
 import math
 
 class Extractor:
+    """
+    Handles data extraction from CSV files for various beam models.
+    Each method corresponds to a specific model type and maps CSV entries
+    to model attributes via setter methods.
+    """
 
-    
-    
+    # --- E-BEAM ---
     def eModelExtraction(self, eBeam):
         """
         Extract data for E-beam model from CSV file
@@ -47,7 +67,8 @@ class Extractor:
 
     def testeModelExtraction(self, eBeam):
         """
-        Test method to print relative uniformity and relative output values from CSV
+        Test method for E-beam extraction.
+        Prints relative uniformity and output values after parsing.        
         """
         try:
             # Get the path from the eBeam object
@@ -85,7 +106,7 @@ class Extractor:
         except Exception as e:
             print(f"Error during extraction: {e}")
 
-    
+    # --- X-BEAM ---
     def xModelExtraction(self, xBeam):
         """
         Extract data for X-beam model from CVS file
@@ -102,6 +123,7 @@ class Extractor:
                 for row in reader:
                     name = row.get('Name [Unit]', '').strip()
                     value = row.get(' Value', '')
+                    
                     # Check for relative output (BeamOutputChange)
                     if 'BeamOutputChange' in name:
                         print(value)
@@ -151,10 +173,10 @@ class Extractor:
                 for row in reader:
                     name = row.get('Name [Unit]', '').strip()
                     value = row.get(' Value', '').strip()
-
                     if not name or not value:
                         continue
-
+                    
+                    # Convert value to Decimal
                     try:
                         dec_val = Decimal(value)
                     except (ValueError, TypeError, InvalidOperation):
