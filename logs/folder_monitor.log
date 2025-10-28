@@ -16,3 +16,57 @@
 2025-10-27 12:38:33,146 - folder_monitor - INFO - Received interrupt signal, stopping...
 2025-10-27 12:38:33,147 - folder_monitor - INFO - Stopping folder monitoring...
 2025-10-27 12:38:33,173 - folder_monitor - INFO - Folder monitoring stopped
+2025-10-27 19:38:06,458 - folder_monitor - INFO - Scanning for existing folders in iDrive...
+2025-10-27 19:38:06,459 - folder_monitor - INFO - Found existing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x
+2025-10-27 19:38:06,459 - folder_monitor - INFO - New folder detected: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x
+2025-10-27 19:38:08,460 - folder_monitor - INFO - Processing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x
+2025-10-27 19:38:08,461 - folder_monitor - INFO - Successfully processed folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x
+2025-10-27 19:38:08,461 - folder_monitor - INFO - Found existing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:38:08,461 - folder_monitor - INFO - New folder detected: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:38:10,462 - folder_monitor - INFO - Processing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:38:10,463 - folder_monitor - INFO - Successfully processed folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:38:10,463 - folder_monitor - INFO - Found existing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0007-BeamCheckTemplate16e
+2025-10-27 19:38:10,464 - folder_monitor - INFO - New folder detected: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0007-BeamCheckTemplate16e
+2025-10-27 19:38:12,465 - folder_monitor - INFO - Processing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0007-BeamCheckTemplate16e
+2025-10-27 19:38:12,466 - folder_monitor - INFO - Successfully processed folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0007-BeamCheckTemplate16e
+2025-10-27 19:38:12,466 - folder_monitor - INFO - Starting folder monitoring on: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive
+2025-10-27 19:38:12,467 - folder_monitor - INFO - Folder monitoring started successfully
+2025-10-27 19:38:12,467 - folder_monitor - INFO - Press Ctrl+C to stop monitoring
+2025-10-27 19:38:13,752 - folder_monitor - INFO - Received interrupt signal, stopping...
+2025-10-27 19:38:13,753 - folder_monitor - INFO - Stopping folder monitoring...
+2025-10-27 19:38:13,754 - folder_monitor - INFO - Folder monitoring stopped
+2025-10-27 19:39:33,158 - folder_monitor - INFO - Scanning for existing folders in iDrive...
+2025-10-27 19:39:33,159 - folder_monitor - INFO - Starting folder monitoring on: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive
+2025-10-27 19:39:33,160 - folder_monitor - INFO - Folder monitoring started successfully
+2025-10-27 19:39:33,160 - folder_monitor - INFO - Press Ctrl+C to stop monitoring
+2025-10-27 19:40:17,640 - folder_monitor - INFO - Received interrupt signal, stopping...
+2025-10-27 19:40:17,640 - folder_monitor - INFO - Stopping folder monitoring...
+2025-10-27 19:40:17,653 - folder_monitor - INFO - Folder monitoring stopped
+2025-10-27 19:40:18,324 - folder_monitor - INFO - Scanning for existing folders in iDrive...
+2025-10-27 19:40:18,325 - folder_monitor - INFO - Starting folder monitoring on: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive
+2025-10-27 19:40:18,326 - folder_monitor - INFO - Folder monitoring started successfully
+2025-10-27 19:40:18,326 - folder_monitor - INFO - Press Ctrl+C to stop monitoring
+2025-10-27 19:40:20,550 - folder_monitor - INFO - Received interrupt signal, stopping...
+2025-10-27 19:40:20,551 - folder_monitor - INFO - Stopping folder monitoring...
+2025-10-27 19:40:20,567 - folder_monitor - INFO - Folder monitoring stopped
+2025-10-27 19:40:30,739 - folder_monitor - INFO - Scanning for existing folders in iDrive...
+2025-10-27 19:40:30,739 - folder_monitor - INFO - Starting folder monitoring on: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive
+2025-10-27 19:40:30,740 - folder_monitor - INFO - Folder monitoring started successfully
+2025-10-27 19:40:30,740 - folder_monitor - INFO - Press Ctrl+C to stop monitoring
+2025-10-27 19:40:54,270 - folder_monitor - INFO - New folder detected: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:40:56,271 - folder_monitor - INFO - Processing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:40:56,272 - folder_monitor - INFO - Successfully processed folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:49:39,835 - folder_monitor - INFO - Received interrupt signal, stopping...
+2025-10-27 19:49:39,835 - folder_monitor - INFO - Stopping folder monitoring...
+2025-10-27 19:49:39,851 - folder_monitor - INFO - Folder monitoring stopped
+2025-10-27 19:49:40,566 - folder_monitor - INFO - Scanning for existing folders in iDrive...
+2025-10-27 19:49:40,566 - folder_monitor - INFO - Found existing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:49:40,566 - folder_monitor - INFO - New folder detected: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:49:42,568 - folder_monitor - INFO - Processing folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:49:42,571 - folder_monitor - INFO - Successfully processed folder: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e
+2025-10-27 19:49:42,572 - folder_monitor - INFO - Starting folder monitoring on: C:\Users\Bonny Brae\Desktop\MPC-Plus\iDrive
+2025-10-27 19:49:42,574 - folder_monitor - INFO - Folder monitoring started successfully
+2025-10-27 19:49:42,575 - folder_monitor - INFO - Press Ctrl+C to stop monitoring
+2025-10-27 19:49:44,813 - folder_monitor - INFO - Received interrupt signal, stopping...
+2025-10-27 19:49:44,813 - folder_monitor - INFO - Stopping folder monitoring...
+2025-10-27 19:49:44,836 - folder_monitor - INFO - Folder monitoring stopped
