@@ -13,9 +13,10 @@ import sys
 import time
 import logging
 from pathlib import Path
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from src.data_manipulation.scripts.DataProcessor import DataProcessor
+from src.data_manipulation.ETL.DataProcessor import DataProcessor
 
 # Configure logging
 logging.basicConfig(
@@ -216,7 +217,7 @@ def main():
     monitor = FolderMonitor()
     
     # Scan for existing folders first
-    monitor.scan_existing_folders()
+    #monitor.scan_existing_folders()
     
     # Start continuous monitoring
     monitor.start_monitoring()
