@@ -1,3 +1,19 @@
+"""
+Extractor Module
+----------------
+This module defines the `Extractor` class, responsible for reading and parsing
+beam data from CSV files and populating model objects (EBeamModel, XBeamModel,
+Geo6xfffModel) with corresponding numerical values.
+
+Each extractor method is tailored to a specific beam type and calls the
+appropriate model's setter methods based on CSV field names.
+
+Supported beam models:
+    - Electron beams: `EBeamModel`
+    - X-ray beams: `XBeamModel`
+    - Geometric beams: `Geo6xfffModel`
+"""
+
 import xml.etree.ElementTree as ET
 import csv
 import decimal
@@ -5,9 +21,13 @@ from decimal import Decimal
 import math
 
 class Extractor:
+    """
+    Handles data extraction from CSV files for various beam models.
+    Each method corresponds to a specific model type and maps CSV entries
+    to model attributes via setter methods.
+    """
 
-    
-    
+    # --- E-BEAM ---
     def eModelExtraction(self, eBeam):
         """
         Extract data for E-beam model from CSV file
@@ -47,45 +67,20 @@ class Extractor:
 
     def testeModelExtraction(self, eBeam):
         """
-        Test method to print relative uniformity and relative output values from CSV
+        Test method for E model extraction.
+        Runs eModelExtraction() and prints all values using getters.
         """
-        try:
-            # Get the path from the eBeam object
-            path = eBeam.get_path()
-            
-            # Parse the CSV file
-            with open(path, 'r', newline='', encoding='utf-8') as csvfile:
-                reader = csv.DictReader(csvfile)
-                
-                # Read through the CSV rows
-                for row in reader:
-                    name = row.get('Name [Unit]', '').strip()
-                    value = row.get(' Value', '')
-                    # Check for relative output (BeamOutputChange)
-                    if 'BeamOutputChange' in name:
-                        try:
-                            eBeam.set_relative_output(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            eBeam.set_relative_output(Decimal(-1))
-                    
-                    # Check for relative uniformity (BeamUniformityChange)
-                    elif 'BeamUniformityChange' in name:
-                        try:
-                            eBeam.set_relative_uniformity(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            eBeam.set_relative_uniformity(Decimal(-1))
-            # Print the values
-            print(f"Relative Uniformity: {eBeam.get_relative_uniformity()}")
-            print(f"Relative Output: {eBeam.get_relative_output()}")
-                
-        except FileNotFoundError:
-            print(f"CSV file not found: {path}")
-        except csv.Error as e:
-            print(f"Error parsing CSV file: {e}")
-        except Exception as e:
-            print(f"Error during extraction: {e}")
+        print("\n--- Starting E Model Extraction Test ---")
+        self.eModelExtraction(eBeam)
+        print("--- Extraction Complete ---\n")
 
-    
+            # Print the values
+        print(f"Date: {eBeam.get_date()}")
+        print(f"Relative Uniformity: {eBeam.get_relative_uniformity()}")
+        print(f"Relative Output: {eBeam.get_relative_output()}")
+
+
+    # --- X-BEAM ---
     def xModelExtraction(self, xBeam):
         """
         Extract data for X-beam model from CVS file
@@ -102,9 +97,9 @@ class Extractor:
                 for row in reader:
                     name = row.get('Name [Unit]', '').strip()
                     value = row.get(' Value', '')
+                    
                     # Check for relative output (BeamOutputChange)
                     if 'BeamOutputChange' in name:
-                        print(value)
                         try:
                             xBeam.set_relative_output(Decimal(value))
                         except (ValueError, TypeError, decimal.InvalidOperation):
@@ -131,7 +126,20 @@ class Extractor:
         except Exception as e:
             print(f"Error during extraction: {e}")
 
+    def testxModelExtraction(self, xBeam):
+        """
+        Test method for X model extraction.
+        Runs xModelExtraction() and prints all values using getters.
+        """
+        print("\n--- Starting X Model Extraction Test ---")
+        self.xModelExtraction(xBeam)
+        print("--- Extraction Complete ---\n")
 
+            # Print the values
+        print(f"Date: {xBeam.get_date()}")
+        print(f"Relative Uniformity: {xBeam.get_relative_uniformity()}")
+        print(f"Relative Output: {xBeam.get_relative_output()}")
+        print(f"Center Shift: {xBeam.get_center_shift()}")
         
     
     def geoModelExtraction(self, geoModel):
@@ -147,14 +155,13 @@ class Extractor:
 
             with open(path, 'r', newline='', encoding='utf-8') as csvfile:
                 reader = csv.DictReader(csvfile)
-
                 for row in reader:
                     name = row.get('Name [Unit]', '').strip()
                     value = row.get(' Value', '').strip()
-
                     if not name or not value:
                         continue
-
+                    
+                    # Convert value to Decimal
                     try:
                         dec_val = Decimal(value)
                     except (ValueError, TypeError, InvalidOperation):
@@ -285,6 +292,7 @@ class Extractor:
         print("--- Extraction Complete ---\n")
 
         try:
+            print(f"Date: {geoModel.get_date()}")
             # IsoCenterGroup
             print(f"IsoCenterSize: {geoModel.get_IsoCenterSize()}")
             print(f"IsoCenterMVOffset: {geoModel.get_IsoCenterMVOffset()}")
@@ -293,7 +301,7 @@ class Extractor:
             # BeamGroup
             print(f"BeamOutputChange: {geoModel.get_relative_output()}")
             print(f"BeamUniformityChange: {geoModel.get_relative_uniformity()}")
-            print(f"BeamCenterShift: {geoModel._relative_uniformity()}")
+            print(f"BeamCenterShift: {geoModel.get_center_shift()}")
 
             # CollimationGroup
             print(f"CollimationRotationOffset: {geoModel.get_CollimationRotationOffset()}")
@@ -322,14 +330,15 @@ class Extractor:
             print(f"MLCBacklashMeanB: {geoModel.get_MLCBacklashMeanB()}")
 
             # Individual MLC leaf/backlash arrays (if implemented)
-            if hasattr(geoModel, "get_MLCLeafA"):
-                print(f"MLCLeafA: {geoModel.get_MLCLeafA()}")
-            if hasattr(geoModel, "get_MLCLeafB"):
-                print(f"MLCLeafB: {geoModel.get_MLCLeafB()}")
-            if hasattr(geoModel, "get_MLCBacklashA"):
-                print(f"MLCBacklashA: {geoModel.get_MLCBacklashA()}")
-            if hasattr(geoModel, "get_MLCBacklashB"):
-                print(f"MLCBacklashB: {geoModel.get_MLCBacklashB()}")
+            # if hasattr(geoModel, "get_MLCLeafA"):
+            #     print(f"MLCLeafA: {geoModel.get_MLCLeafA()}")
+            # if hasattr(geoModel, "get_MLCLeafB"):
+            #     print(f"MLCLeafB: {geoModel.get_MLCLeafB()}")
+            for i in range(11, 51):
+                print(f"MLCLeafA (Index {i}): {geoModel.get_MLCLeafA(i)}")
+            for i in range(11, 51):
+                print(f"MLCLeafB (Index {i}): {geoModel.get_MLCLeafB(i)}")
+
 
             # Jaw Group
             print(f"JawX1: {geoModel.get_JawX1()}")

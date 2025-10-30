@@ -1,4 +1,6 @@
+from datetime import datetime
 from decimal import Decimal
+import re
 
 class Geo6xfffModel:
     def __init__(self):
@@ -222,3 +224,19 @@ class Geo6xfffModel:
 
     def set_center_shift(self, center_shift):
         self._center_shift = center_shift
+
+    def _getDateFromPathName(self, path):
+        """
+        Extracts a datetime from the given path.
+        Example:
+            '...NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch'
+            → datetime(2025, 9, 19, 7, 41, 49)
+        Raises:
+            ValueError: if no valid date pattern is found in the path.
+        """
+        match = re.search(r'(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})', path)
+        if not match:
+            raise ValueError(f"Could not extract date from path: {path}")
+        
+        date_str = match.group(1)
+        return datetime.strptime(date_str, "%Y-%m-%d-%H-%M-%S")

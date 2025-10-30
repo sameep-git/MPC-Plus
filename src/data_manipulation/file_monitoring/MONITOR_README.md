@@ -33,10 +33,6 @@ python src/main.py start
 python src/main.py start --background
 ```
 
-**Windows users can also use:**
-```bash
-start_monitor.bat
-```
 
 ### 3. Using the System
 
@@ -45,21 +41,6 @@ start_monitor.bat
 3. The monitor automatically detects new folders and processes them
 4. Processing results are logged to `folder_monitor.log`
 
-## File Structure
-
-```
-MPC-Plus/
-├── src/
-│   ├── folder_monitor.py          # Core monitoring logic
-│   ├── main.py                    # Main entry point
-│   ├── run_monitor_service.py     # Background service runner
-│   └── data_manipulation/         # Existing data processing modules
-├── iDrive/                        # Monitored folder (created automatically)
-├── requirements.txt               # Python dependencies
-├── start_monitor.bat             # Windows startup script
-├── folder_monitor.log            # Monitor log file
-└── MONITOR_README.md             # This documentation
-```
 
 ## Commands
 
