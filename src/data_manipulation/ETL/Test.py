@@ -8,14 +8,24 @@ Usage:
     1) Update the `path` variable below to point to a directory containing 
        beam test results (a Results.csv file is expected inside).
     2) Run this script directly to process that dataset.
+
+Command:
+    python -m src.data_manipulation.ETL.Test
 """ 
 from .DataProcessor import DataProcessor
 
 def main():
-    # path = r"C:\Users\Bonny Brae\Desktop\MPC-Plus\data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
+    path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
+    dp = DataProcessor(path)
+    dp.RunTest()
+    print("----------------------------------------------------------------")
+    path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x"
+    dp = DataProcessor(path)
+    dp.RunTest()
+    print("----------------------------------------------------------------")
     path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch"
     dp = DataProcessor(path)
-    dp.Run()
+    dp.RunTest()
 
 if __name__ == "__main__":
     main()
