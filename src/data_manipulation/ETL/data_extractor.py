@@ -1,7 +1,7 @@
 """
-Extractor Module
+Data Extractor Module
 ----------------
-This module defines the `Extractor` class, responsible for reading and parsing
+This module defines the `data_extractor` class, responsible for reading and parsing
 beam data from CSV files and populating model objects (EBeamModel, XBeamModel,
 Geo6xfffModel) with corresponding numerical values.
 
@@ -14,13 +14,11 @@ Supported beam models:
     - Geometric beams: `Geo6xfffModel`
 """
 
-import xml.etree.ElementTree as ET
 import csv
 import decimal
 from decimal import Decimal
-import math
 
-class Extractor:
+class data_extractor:
     """
     Handles data extraction from CSV files for various beam models.
     Each method corresponds to a specific model type and maps CSV entries
