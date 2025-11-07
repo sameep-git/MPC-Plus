@@ -25,6 +25,47 @@ class data_extractor:
     to model attributes via setter methods.
     """
 
+    def extract(self, model):
+        """
+        Automatically calls the correct extraction method
+        based on the type of model object passed in.
+
+        Supported models:
+            - EBeamModel
+            - XBeamModel
+            - Geo6xfffModel
+        """
+        model_type = type(model).__name__.lower()
+
+        if "ebeam" in model_type:
+            return self.eModelExtraction(model)
+        elif "xbeam" in model_type:
+            return self.xModelExtraction(model)
+        elif "geo" in model_type:
+            return self.geoModelExtraction(model)
+        else:
+            raise TypeError(f"Unsupported model type: {type(model).__name__}")
+
+    def extractTest(self, model):
+        """
+        Automatically calls the correct extraction method
+        based on the type of model object passed in.
+
+        Supported models:
+            - EBeamModel
+            - XBeamModel
+            - Geo6xfffModel
+        """
+        model_type = type(model).__name__.lower()
+
+        if "ebeam" in model_type:
+            return self.testeModelExtraction(model)
+        elif "xbeam" in model_type:
+            return self.testxModelExtraction(model)
+        elif "geo" in model_type:
+            return self.testGeoModelExtraction(model)
+        else:
+            raise TypeError(f"Unsupported model type: {type(model).__name__}")
     # --- E-BEAM ---
     def eModelExtraction(self, eBeam):
         """
