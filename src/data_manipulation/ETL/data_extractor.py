@@ -74,6 +74,7 @@ class data_extractor:
 
             # Print the values
         print(f"Date: {eBeam.get_date()}")
+        print(f"Machine SN: {eBeam.get_machine_SN()}")
         print(f"Relative Uniformity: {eBeam.get_relative_uniformity()}")
         print(f"Relative Output: {eBeam.get_relative_output()}")
 
@@ -135,6 +136,7 @@ class data_extractor:
 
             # Print the values
         print(f"Date: {xBeam.get_date()}")
+        print(f"Machine SN: {xBeam.get_machine_SN()}")
         print(f"Relative Uniformity: {xBeam.get_relative_uniformity()}")
         print(f"Relative Output: {xBeam.get_relative_output()}")
         print(f"Center Shift: {xBeam.get_center_shift()}")
@@ -291,6 +293,7 @@ class data_extractor:
 
         try:
             print(f"Date: {geoModel.get_date()}")
+            print(f"Machine SN: {geoModel.get_machine_SN()}")
             # IsoCenterGroup
             print(f"IsoCenterSize: {geoModel.get_IsoCenterSize()}")
             print(f"IsoCenterMVOffset: {geoModel.get_IsoCenterMVOffset()}")

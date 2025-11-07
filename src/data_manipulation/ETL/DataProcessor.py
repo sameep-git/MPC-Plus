@@ -45,6 +45,7 @@ class DataProcessor:
             beam6e.set_path(self.data_path)
             beam6e.set_type("6e")
             beam6e.set_date(beam6e._getDateFromPathName(self.data_path)); # Sets date based on date in the path name
+            beam6e.set_machine_SN(beam6e._getSNFromPathName(self.data_path)); # Sets serial number based on date in the path name
             self.data_ex.testeModelExtraction(beam6e);
             # beam6e.upload();
 
@@ -54,6 +55,7 @@ class DataProcessor:
             beam9e.set_path(self.data_path)
             beam9e.set_type("9e")
             beam9e.set_date(beam9e._getDateFromPathName(self.data_path))  # Sets date based on date in the path name
+            beam9e.set_machine_SN(beam9e._getSNFromPathName(self.data_path))
             self.data_ex.eModelExtraction(beam9e)
             # beam9e.upload()
 
@@ -63,6 +65,7 @@ class DataProcessor:
             beam12e.set_path(self.data_path)
             beam12e.set_type("12e")
             beam12e.set_date(beam12e._getDateFromPathName(self.data_path)) # Sets date based on date in the path name
+            beam12e.set_machine_SN(beam12e._getSNFromPathName(self.data_path))
             self.data_ex.eModelExtraction(beam12e)
             # beam12e.upload()
 
@@ -72,6 +75,7 @@ class DataProcessor:
             beam16e.set_path(self.data_path)
             beam16e.set_type("16e")
             beam16e.set_date(beam16e._getDateFromPathName(self.data_path)) # Sets date based on date in the path name
+            beam16e.set_machine_SN(beam16e._getSNFromPathName(self.data_path))
             self.data_ex.eModelExtraction(beam16e)
             # beam16e.upload()
 
@@ -82,6 +86,7 @@ class DataProcessor:
             beam10x.set_path(self.data_path)
             beam10x.set_type("10x")
             beam10x.set_date(beam10x._getDateFromPathName(self.data_path)); #Sets date based on date in the path name
+            beam10x.set_machine_SN(beam10x._getSNFromPathName(self.data_path));
             self.data_ex.xModelExtraction(beam10x);
             # beam6e.upload();
         
@@ -91,6 +96,7 @@ class DataProcessor:
             beam15x.set_path(self.data_path)
             beam15x.set_type("15x")
             beam15x.set_date(beam15x._getDateFromPathName(self.data_path)); #Sets date based on date in the path name
+            beam15x.set_machine_SN(beam15x._getSNFromPathName(self.data_path));
             self.data_ex.xModelExtraction(beam15x);
             # beam6e.upload();
         
@@ -101,6 +107,7 @@ class DataProcessor:
             beam6xfff.set_path(self.data_path)
             beam6xfff.set_type("15x")
             beam6xfff.set_date(beam6xfff._getDateFromPathName(self.data_path)); #Sets date based on date in the path name
+            beam6xfff.set_machine_SN(beam6xfff._getSNFromPathName(self.data_path));
             self.data_ex.testGeoModelExtraction(beam6xfff);
             # beam6e.upload();
         
@@ -126,6 +133,7 @@ class DataProcessor:
             beam6e.set_path(self.data_path)
             beam6e.set_type("6e")
             beam6e.set_date(beam6e._getDateFromPathName(self.data_path)); # Sets date based on date in the path name
+            beam6e.set_machine_SN(beam6e._getSNFromPathName(self.data_path));
             self.data_ex.testeModelExtraction(beam6e);
             ## Retrieve image data from the image_extractor
             print("Retrieving image data from the image_extractor")
@@ -142,6 +150,7 @@ class DataProcessor:
             beam9e.set_path(self.data_path)
             beam9e.set_type("9e")
             beam9e.set_date(beam9e._getDateFromPathName(self.data_path))  # Sets date based on date in the path name
+            beam9e.set_machine_SN(beam9e._getSNFromPathName(self.data_path))
             self.data_ex.testeModelExtraction(beam9e)
             # beam9e.upload()
 
@@ -151,6 +160,7 @@ class DataProcessor:
             beam12e.set_path(self.data_path)
             beam12e.set_type("12e")
             beam12e.set_date(beam12e._getDateFromPathName(self.data_path)) # Sets date based on date in the path name
+            beam12e.set_machine_SN(beam12e._getSNFromPathName(self.data_path))
             self.data_ex.testeModelExtraction(beam12e)
             # beam12e.upload()
 
@@ -160,6 +170,7 @@ class DataProcessor:
             beam16e.set_path(self.data_path)
             beam16e.set_type("16e")
             beam16e.set_date(beam16e._getDateFromPathName(self.data_path)) # Sets date based on date in the path name
+            beam16e.set_machine_SN(beam16e._getSNFromPathName(self.data_path))
             self.data_ex.eModelExtraction(beam16e)
             # beam16e.upload()
 
@@ -170,6 +181,7 @@ class DataProcessor:
             beam10x.set_path(self.data_path)
             beam10x.set_type("10x")
             beam10x.set_date(beam10x._getDateFromPathName(self.data_path)); #Sets date based on date in the path name
+            beam10x.set_machine_SN(beam10x._getSNFromPathName(self.data_path));
             self.data_ex.testxModelExtraction(beam10x);
             # beam6e.upload();
         
@@ -179,6 +191,7 @@ class DataProcessor:
             beam15x.set_path(self.data_path)
             beam15x.set_type("15x")
             beam15x.set_date(beam15x._getDateFromPathName(self.data_path)); #Sets date based on date in the path name
+            beam15x.set_machine_SN(beam15x._getSNFromPathName(self.data_path));
             self.data_ex.testxModelExtraction(beam15x);
             # beam6e.upload();
         
@@ -189,6 +202,7 @@ class DataProcessor:
             beam6xfff.set_path(self.data_path)
             beam6xfff.set_type("15x")
             beam6xfff.set_date(beam6xfff._getDateFromPathName(self.data_path)); #Sets date based on date in the path name
+            beam6xfff.set_machine_SN(beam6xfff._getSNFromPathName(self.data_path));
             self.data_ex.testGeoModelExtraction(beam6xfff);
             # beam6e.upload();
         

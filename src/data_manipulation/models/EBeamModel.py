@@ -8,6 +8,7 @@ class EBeamModel:
         self._type = ""
         self._path = ""
         self._date = None
+        self._machine_SN = None
         self._relative_uniformity = Decimal('0.0')
         self._relative_output = Decimal('0.0')
     
@@ -26,6 +27,9 @@ class EBeamModel:
 
     def get_path(self):
         return self._path
+
+    def get_machine_SN(self):
+        return self._machine_SN
       
     # Setters
     def set_type(self, type_value):
@@ -42,6 +46,9 @@ class EBeamModel:
     
     def set_relative_output(self, relative_output):
         self._relative_output = relative_output
+    
+    def set_machine_SN(self, SN):
+        self._machine_SN = SN
 
     def _getDateFromPathName(self, path):
         """
@@ -58,3 +65,17 @@ class EBeamModel:
         
         date_str = match.group(1)
         return datetime.strptime(date_str, "%Y-%m-%d-%H-%M-%S")
+    
+    def _getSNFromPathName(self, path):
+        """
+        Extracts a serial number from the given path.
+        Example:
+            '...NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch'
+            → '6543'
+        Raises:
+            ValueError: if no valid serial number pattern is found in the path.
+        """
+        match = re.search(r'SN(\d{4})', path)
+        if not match:
+            raise ValueError(f"Could not extract serial number from path: {path}")
+        return match.group(1)
