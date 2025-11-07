@@ -16,10 +16,10 @@ from .DataProcessor import DataProcessor
 
 def main():
     ##Unsure but i think for window the slashes are a different direction
-    ##TODO: Make this more flexible for different operating systems
-    path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
-    dp = DataProcessor(path)
-    dp.RunTest()
+    # ##TODO: Make this more flexible for different operating systems
+    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
+    # dp = DataProcessor(path)
+    # dp.RunTest()
     print("----------------------------------------------------------------")
     path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x"
     dp = DataProcessor(path)
