@@ -40,6 +40,7 @@ class DataProcessor:
         model.set_type(beam_type)
         model.set_date(model._getDateFromPathName(self.data_path))
         model.set_machine_SN(model._getSNFromPathName(self.data_path))
+        model.set_baseline(model._getIsBaselineFromPathName(self.data_path))
         return model
     # -------------------------------------------------------------------------
     # Generic helper method for images
