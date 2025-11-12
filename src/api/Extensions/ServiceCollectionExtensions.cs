@@ -11,17 +11,17 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMachineDataAccess(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<InMemoryMachineRepository>();
-
         var databaseProvider = configuration[$"{DatabaseOptions.SectionName}:Provider"] ?? new DatabaseOptions().Provider;
 
         switch (databaseProvider.ToLowerInvariant())
         {
             case "supabase":
+                services.AddSingleton<InMemoryMachineRepository>();
                 services.AddSupabaseMachineDataAccess(configuration);
                 break;
             case "inmemory":
             case "mock":
+                services.AddSingleton<InMemoryMachineRepository>();
                 services.AddInMemoryMachineDataAccess();
                 break;
             default:
