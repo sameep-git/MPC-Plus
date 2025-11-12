@@ -1,7 +1,7 @@
 import os
 from .data_extractor import data_extractor
 from .image_extractor import image_extractor
-# from .Uploader import Uploader
+from .Uploader import Uploader
 
 from ..models.EBeamModel import EBeamModel
 from ..models.XBeamModel import XBeamModel
@@ -25,7 +25,10 @@ class DataProcessor:
 
         self.data_ex = data_extractor()
         self.image_ex = image_extractor()
-        # self.up = Uploader()
+        
+        #Database Uploader
+        self.up = Uploader()
+        #If ran as test, coded so that no database connection is made
 
     # -------------------------------------------------------------------------
     # Generic helper method for beams
@@ -94,14 +97,23 @@ class DataProcessor:
                 else:
                     print("Running normal extraction...")
                     self.data_ex.extract(beam)
+                    print("Uploading to SupaBase...")
+                    #Set Up DataBase
+                    # Connect to database
+                    connection_params = {
+                        'url': 'your-supabase-url',
+                        'key': 'your-supabase-key'
+                    }
+                    self.up.connect(connection_params)
+                    # self.up.upload(beam)
+                    print("Uploading Complete")
+                    self.up.close();
+
+                
 
                 # --- Image Extraction for all beam types ---
                 print(f"Extracting image data for {beam_type} beam...")
                 self._init_beam_image(beam_type)
-
-                # Optionally upload
-                # beam.upload()
-
                 return
 
         # --- No beam type matched ---
