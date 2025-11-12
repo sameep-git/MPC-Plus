@@ -5,8 +5,8 @@ namespace Api.Repositories;
 
 public class InMemoryMachineRepository : IMachineRepository
 {
-    private static readonly IReadOnlyList<Machine> SeedMachines =
-    [
+    private static readonly IReadOnlyList<Machine> SeedMachines = new[]
+    {
         new Machine
         {
             Id = "MPC-001",
@@ -28,14 +28,14 @@ public class InMemoryMachineRepository : IMachineRepository
             Type = "Diagnostic",
             Location = "Lab 1"
         }
-    ];
+    };
 
     private readonly ConcurrentDictionary<string, Machine> _machines;
 
-    public InMemoryMachineRepository(IEnumerable<Machine>? seed = null)
+    public InMemoryMachineRepository()
     {
         _machines = new ConcurrentDictionary<string, Machine>(
-            (seed ?? SeedMachines).Select(machine => new KeyValuePair<string, Machine>(machine.Id, Clone(machine))));
+            SeedMachines.Select(machine => new KeyValuePair<string, Machine>(machine.Id, Clone(machine))));
     }
 
     public Task<IReadOnlyList<Machine>> GetAllAsync(CancellationToken cancellationToken = default)
