@@ -3,6 +3,7 @@ using Api.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMachineDataAccess(builder.Configuration);
+builder.Services.AddBeamDataAccess(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddControllers();

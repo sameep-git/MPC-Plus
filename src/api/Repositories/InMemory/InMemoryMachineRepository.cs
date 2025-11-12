@@ -9,24 +9,24 @@ public class InMemoryMachineRepository : IMachineRepository
     {
         new Machine
         {
-            Id = "MPC-001",
-            Name = "Primary Gantry",
-            Type = "Linear Accelerator",
-            Location = "Room A"
+              Id = "1",
+              Name = "MPC-001",
+              Type = "Varian TrueBeam",
+              Location = "Fort Worth"
         },
         new Machine
         {
-            Id = "MPC-002",
-            Name = "Secondary Gantry",
-            Type = "Linear Accelerator",
-            Location = "Room B"
+              Id = "2",
+              Name = "MPC-002",
+              Type = "Varian TrueBeam",
+              Location = "Arlington"
         },
         new Machine
         {
-            Id = "MPC-003",
-            Name = "QA Test Bench",
-            Type = "Diagnostic",
-            Location = "Lab 1"
+              Id = "3",
+              Name = "MPC-003",
+              Type = "Varian TrueBeam",
+              Location = "Dallas"
         }
     };
 
