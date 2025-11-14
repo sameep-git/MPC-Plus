@@ -1,7 +1,7 @@
 from os import name
 from .data_extractor import data_extractor
 from .image_extractor import image_extractor
-# From Uploader import Uploader
+from .Uploader import Uploader
 from ..models.EBeamModel import EBeamModel
 from ..models.XBeamModel import XBeamModel
 from ..models.Geo6xfffModel import Geo6xfffModel
@@ -16,18 +16,27 @@ class DataProcessor:
     and extract the relevant beam data from `Results.csv`.
     """
     
-    def __init__(self, path):
+    def __init__(self, path, supabase_url=None, supabase_key=None):
         """
         Initialize the DataProcessor with a file path.
-        path (str): The base path to the beam data directory.
-        The processor will look for Results.csv in this directory.
+        
+        Args:
+            path (str): The base path to the beam data directory.
+                       The processor will look for Results.csv in this directory.
+            supabase_url (str, optional): Supabase project URL for uploading data
+            supabase_key (str, optional): Supabase API key for uploading data
         """
         # self.data_path = path + "\\Results.csv"
         self.data_path = os.path.join(path, "Results.csv")
         self.data_ex = data_extractor()
         self.image_path = os.path.join(path, "BeamProfileCheck.xim")
         self.image_ex = image_extractor()
-        # self.up = Uploader()
+        
+        # Initialize uploader if credentials provided
+        if supabase_url and supabase_key:
+            self.uploader = Uploader(supabase_url, supabase_key)
+        else:
+            self.uploader = None
     
     def Run(self):
         """
