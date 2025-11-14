@@ -4,6 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMachineDataAccess(builder.Configuration);
 builder.Services.AddBeamDataAccess(builder.Configuration);
+builder.Services.AddResultsDataAccess(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddControllers();

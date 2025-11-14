@@ -132,5 +132,66 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IBeamRepository>(provider => provider.GetRequiredService<InMemoryBeamRepository>());
         return services;
     }
+
+    public static IServiceCollection AddResultsDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        var databaseProvider = configuration[$"{DatabaseOptions.SectionName}:Provider"] ?? new DatabaseOptions().Provider;
+
+        switch (databaseProvider.ToLowerInvariant())
+        {
+            case "supabase":
+                services.AddSingleton<InMemoryResultsRepository>();
+                services.AddSupabaseResultsDataAccess(configuration);
+                break;
+            case "inmemory":
+            case "mock":
+                services.AddSingleton<InMemoryResultsRepository>();
+                services.AddInMemoryResultsDataAccess();
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'.");
+        }
+
+        return services;
+    }
+
+    private static IServiceCollection AddSupabaseResultsDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<SupabaseSettings>(configuration.GetSection(SupabaseSettings.SectionName));
+
+        services.AddScoped<IResultsRepository>(provider =>
+        {
+            var settings = provider.GetRequiredService<IOptions<SupabaseSettings>>().Value;
+            var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+            if (string.IsNullOrWhiteSpace(settings.Url) || string.IsNullOrWhiteSpace(settings.Key))
+            {
+                loggerFactory
+                    .CreateLogger("DataAccess")
+                    .LogWarning("Supabase credentials missing. Using in-memory results repository.");
+
+                return provider.GetRequiredService<InMemoryResultsRepository>();
+            }
+
+            var options = new SupabaseOptions
+            {
+                AutoConnectRealtime = false
+            };
+
+            var client = new Client(settings.Url, settings.Key, options);
+            client.InitializeAsync().GetAwaiter().GetResult();
+
+            var logger = loggerFactory.CreateLogger<SupabaseResultsRepository>();
+            return new SupabaseResultsRepository(client, logger);
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddInMemoryResultsDataAccess(this IServiceCollection services)
+    {
+        services.AddSingleton<IResultsRepository>(provider => provider.GetRequiredService<InMemoryResultsRepository>());
+        return services;
+    }
 }
 
