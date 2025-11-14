@@ -277,8 +277,8 @@ paths:
     get:
       tags:
         - Results
-      summary: Get results for a specific month and year
-      description: Returns beam check results for the specified time period
+      summary: Get monthly calendar view of check results
+      description: Returns a calendar view showing beam checks and geometry checks for a specific month, year, and machine with pass/warning/fail status
       parameters:
         - name: month
           in: query
@@ -294,15 +294,19 @@ paths:
           schema:
             type: integer
           description: Year
+        - name: machineId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Machine identifier
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Result'
+                $ref: '#/components/schemas/MonthlyResults'
         '400':
           description: Bad request
 
@@ -691,6 +695,53 @@ components:
         status:
           type: string
           description: Status of the check
+
+    MonthlyResults:
+      type: object
+      properties:
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+          description: Month queried
+        year:
+          type: integer
+          description: Year queried
+        machineId:
+          type: string
+          description: Machine identifier
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayCheckStatus'
+          description: Daily check statuses for the month
+      required:
+        - month
+        - year
+        - machineId
+        - checks
+
+    DayCheckStatus:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Date of checks
+        beamCheckStatus:
+          type: string
+          nullable: true
+          enum: [pass, warning, fail]
+          description: Overall beam check status for the day (null if no checks)
+        geometryCheckStatus:
+          type: string
+          nullable: true
+          enum: [pass, warning, fail]
+          description: Overall geometry check status for the day (null if no checks)
+      required:
+        - date
+        - beamCheckStatus
+        - geometryCheckStatus
 
     Baseline:
       type: object

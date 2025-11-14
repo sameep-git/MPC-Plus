@@ -8,17 +8,18 @@ namespace Api.Controllers;
 [Route("api/[controller]")]
 public class ResultsController : ControllerBase
 {
-    private readonly IResultsRepository _repository;
+    private readonly IBeamRepository _beamRepository;
 
-    public ResultsController(IResultsRepository repository)
+    public ResultsController(IBeamRepository beamRepository)
     {
-        _repository = repository;
+        _beamRepository = beamRepository;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Result>>> Get(
+    public async Task<ActionResult<MonthlyResults>> Get(
         [FromQuery] int month,
         [FromQuery] int year,
+        [FromQuery] string machineId,
         CancellationToken cancellationToken = default)
     {
         // Validate month range (1-12)
@@ -33,7 +34,81 @@ public class ResultsController : ControllerBase
             return BadRequest("Year must be between 1900 and 2100.");
         }
 
-        var results = await _repository.GetByMonthAndYearAsync(month, year, cancellationToken);
-        return Ok(results);
+        // Validate machineId
+        if (string.IsNullOrWhiteSpace(machineId))
+        {
+            return BadRequest("MachineId is required.");
+        }
+
+        // Get all beam checks for this machine, month, and year
+        var startDate = new DateOnly(year, month, 1);
+        var endDate = month == 12 
+            ? new DateOnly(year + 1, 1, 1).AddDays(-1)
+            : new DateOnly(year, month + 1, 1).AddDays(-1);
+        
+        var beamChecks = await _beamRepository.GetAllAsync(
+            machineId: machineId,
+            startDate: startDate,
+            endDate: endDate,
+            cancellationToken: cancellationToken);
+
+        // Group by date and aggregate status
+        var dailyChecks = new Dictionary<DateOnly, string?>();
+        foreach (var check in beamChecks)
+        {
+            var date = check.Date;
+            var status = DetermineCheckStatus(check);
+            
+            // If we already have a status for this date, take the worse one
+            if (dailyChecks.ContainsKey(date))
+            {
+                dailyChecks[date] = AgregateStatuses(dailyChecks[date], status);
+            }
+            else
+            {
+                dailyChecks[date] = status;
+            }
+        }
+
+        var checks = dailyChecks
+            .OrderBy(kvp => kvp.Key)
+            .Select(kvp => new DayCheckStatus
+            {
+                Date = kvp.Key.ToDateTime(TimeOnly.MinValue),
+                BeamCheckStatus = kvp.Value,
+                GeometryCheckStatus = null  // TODO: Add geometry checks when model exists
+            })
+            .ToList();
+
+        var monthlyResults = new MonthlyResults
+        {
+            Month = month,
+            Year = year,
+            MachineId = machineId,
+            Checks = checks.AsReadOnly()
+        };
+
+        return Ok(monthlyResults);
+    }
+
+    /// <summary>
+    /// Determine the status of a single beam check based on pass criteria.
+    /// </summary>
+    private static string DetermineCheckStatus(Beam beam)
+    {
+        // TODO: Implement actual pass/warning/fail logic based on beam metrics
+        // For now, return "pass" as default
+        return "pass";
+    }
+
+    /// <summary>
+    /// Aggregate two statuses, returning the worse one.
+    /// Hierarchy: fail > warning > pass
+    /// </summary>
+    private static string AgregateStatuses(string? status1, string? status2)
+    {
+        if (status1 == "fail" || status2 == "fail") return "fail";
+        if (status1 == "warning" || status2 == "warning") return "warning";
+        return "pass";
     }
 }
