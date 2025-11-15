@@ -132,5 +132,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IBeamRepository>(provider => provider.GetRequiredService<InMemoryBeamRepository>());
         return services;
     }
+
+
 }
 

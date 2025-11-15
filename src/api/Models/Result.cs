@@ -10,6 +10,12 @@ public class Result
     /// <summary>Unique identifier for the result.</summary>
     public required string Id { get; set; }
 
+    /// <summary>Machine identifier.</summary>
+    public required string MachineId { get; set; }
+
+    /// <summary>Date of the result.</summary>
+    public DateTime? Date { get; set; }
+
     /// <summary>Month of the result.</summary>
     public int? Month { get; set; }
 
