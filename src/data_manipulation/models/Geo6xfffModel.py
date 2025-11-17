@@ -4,6 +4,12 @@ import re
 
 class Geo6xfffModel:
     def __init__(self):
+        # ---- Basic Info ----
+        self._type = ""
+        self._date = None
+        self._path = ""
+        self._machine_id = ""
+        self._note = ""
 
         # ---- IsoCenterGroup ----
         self._IsoCenterSize = Decimal('0.0')
@@ -199,12 +205,12 @@ class Geo6xfffModel:
 
     def get_center_shift(self):
         return self._center_shift
-
-
-    # Placeholder for path parsing (if needed later)
-    def _getDateFromPathName(self, path):
-        # TODO: Implement date extraction logic from path
-        pass
+    
+    def get_machine_id(self):
+        return self._machine_id
+    
+    def get_note(self):
+        return self._note
     
     # Setters
     def set_type(self, type_value):
@@ -224,6 +230,12 @@ class Geo6xfffModel:
 
     def set_center_shift(self, center_shift):
         self._center_shift = center_shift
+    
+    def set_machine_id(self, machine_id):
+        self._machine_id = machine_id
+    
+    def set_note(self, note):
+        self._note = note
 
     def _getDateFromPathName(self, path):
         """

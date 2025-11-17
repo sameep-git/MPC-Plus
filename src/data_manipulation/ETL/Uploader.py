@@ -90,10 +90,12 @@ class Uploader:
             # Extract all data using getters
             data = {
                 'beam_type': beam_type,
+                'machine_id': ebeam_model.get_machine_id(),
                 'measurement_date': self._convert_decimal_to_float(ebeam_model.get_date()),
                 'file_path': ebeam_model.get_path(),
                 'relative_uniformity': self._convert_decimal_to_float(ebeam_model.get_relative_uniformity()),
                 'relative_output': self._convert_decimal_to_float(ebeam_model.get_relative_output()),
+                'note': ebeam_model.get_note() if ebeam_model.get_note() else None,
                 'uploaded_at': datetime.now().isoformat()
             }
             
@@ -143,11 +145,13 @@ class Uploader:
             # Extract all data using getters
             data = {
                 'beam_type': beam_type,
+                'machine_id': xbeam_model.get_machine_id(),
                 'measurement_date': self._convert_decimal_to_float(xbeam_model.get_date()),
                 'file_path': xbeam_model.get_path(),
                 'relative_uniformity': self._convert_decimal_to_float(xbeam_model.get_relative_uniformity()),
                 'relative_output': self._convert_decimal_to_float(xbeam_model.get_relative_output()),
                 'center_shift': self._convert_decimal_to_float(xbeam_model.get_center_shift()),
+                'note': xbeam_model.get_note() if xbeam_model.get_note() else None,
                 'uploaded_at': datetime.now().isoformat()
             }
             
@@ -275,6 +279,7 @@ class Uploader:
             # ---- Combine all data into single record ----
             data = {
                 'beam_type': beam_type,
+                'machine_id': geo_model.get_machine_id(),
                 'measurement_date': self._convert_decimal_to_float(geo_model.get_date()),
                 'file_path': geo_model.get_path(),
                 
@@ -310,6 +315,9 @@ class Uploader:
                 
                 # Jaw Parallelism
                 **jaw_parallelism_data,
+                
+                # Note
+                'note': geo_model.get_note() if geo_model.get_note() else None,
                 
                 'uploaded_at': datetime.now().isoformat()
             }
