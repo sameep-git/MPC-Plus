@@ -252,21 +252,24 @@ class Uploader:
     # --- E-BEAM ---
     def eModelUpload(self, eBeam):
         """
-        Upload data for E-beam model to database.
+        Upload data for E-beam model to the single beam table.
+        Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
         """
         try:
-            # Prepare data dictionary using model getters
+            # Prepare data dictionary using model getters, matching the new schema
             data = {
+                'type': eBeam.get_type(),
                 'date': eBeam.get_date(),
-                'machine_sn': eBeam.get_machine_SN(),
-                'beam_type': eBeam.get_type(),
-                'is_baseline': eBeam.get_baseline(),
-                'relative_output': eBeam.get_relative_output(),
-                'relative_uniformity': eBeam.get_relative_uniformity(),
+                'path': eBeam.get_path(),
+                'relUniformity': eBeam.get_relative_uniformity(),
+                'relOutput': eBeam.get_relative_output(),
+                'centerShift': None,  # E-beams don't have centerShift
+                'machineId': eBeam.get_machine_SN(),
+                'note': None  # Add note if available in the model
             }
 
-            # Upload to database
-            table_name = 'ebeam_data'  # Adjust table name as needed
+            # Upload to the single beam table
+            table_name = 'beam'
             return self.db_adapter.upload_beam_data(table_name, data)
 
         except Exception as e:
@@ -277,22 +280,24 @@ class Uploader:
     # --- X-BEAM ---
     def xModelUpload(self, xBeam):
         """
-        Upload data for X-beam model to database.
+        Upload data for X-beam model to the single beam table.
+        Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
         """
         try:
-            # Prepare data dictionary using model getters
+            # Prepare data dictionary using model getters, matching the new schema
             data = {
+                'type': xBeam.get_type(),
                 'date': xBeam.get_date(),
-                'machine_sn': xBeam.get_machine_SN(),
-                'beam_type': xBeam.get_type(),
-                'is_baseline': xBeam.get_baseline(),
-                'relative_output': xBeam.get_relative_output(),
-                'relative_uniformity': xBeam.get_relative_uniformity(),
-                'center_shift': xBeam.get_center_shift(),
+                'path': xBeam.get_path(),
+                'relUniformity': xBeam.get_relative_uniformity(),
+                'relOutput': xBeam.get_relative_output(),
+                'centerShift': xBeam.get_center_shift(),
+                'machineId': xBeam.get_machine_SN(),
+                'note': None  # Add note if available in the model
             }
 
-            # Upload to database
-            table_name = 'xbeam_data'  # Adjust table name as needed
+            # Upload to the single beam table
+            table_name = 'beam'
             return self.db_adapter.upload_beam_data(table_name, data)
 
         except Exception as e:
@@ -303,74 +308,135 @@ class Uploader:
     # --- GEO MODEL ---
     def geoModelUpload(self, geoModel):
         """
-        Upload data for Geo6xfffModel to database.
+        Upload data for Geo6xfffModel to the single beam table.
+        Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
+        
+        Note: Geometry models have additional data (isocenter, gantry, couch, MLC, jaws) 
+        that is not stored in the basic beam table. The full extraction code is 
+        commented out below for easy re-enabling when geometry tables are created.
         """
         try:
-            # Prepare data dictionary using model getters
+            # Prepare basic beam data matching the new schema
             data = {
+                'type': geoModel.get_type(),
                 'date': geoModel.get_date(),
-                'machine_sn': geoModel.get_machine_SN(),
-                'beam_type': geoModel.get_type(),
-                'is_baseline': geoModel.get_baseline(),
-                
-                # IsoCenterGroup
-                'iso_center_size': geoModel.get_IsoCenterSize(),
-                'iso_center_mv_offset': geoModel.get_IsoCenterMVOffset(),
-                'iso_center_kv_offset': geoModel.get_IsoCenterKVOffset(),
-                
-                # BeamGroup
-                'relative_output': geoModel.get_relative_output(),
-                'relative_uniformity': geoModel.get_relative_uniformity(),
-                'center_shift': geoModel.get_center_shift(),
-                
-                # CollimationGroup
-                'collimation_rotation_offset': geoModel.get_CollimationRotationOffset(),
-                
-                # GantryGroup
-                'gantry_absolute': geoModel.get_GantryAbsolute(),
-                'gantry_relative': geoModel.get_GantryRelative(),
-                
-                # EnhancedCouchGroup
-                'couch_max_position_error': geoModel.get_CouchMaxPositionError(),
-                'couch_lat': geoModel.get_CouchLat(),
-                'couch_lng': geoModel.get_CouchLng(),
-                'couch_vrt': geoModel.get_CouchVrt(),
-                'couch_rtn_fine': geoModel.get_CouchRtnFine(),
-                'couch_rtn_large': geoModel.get_CouchRtnLarge(),
-                'rotation_induced_couch_shift_full_range': geoModel.get_RotationInducedCouchShiftFullRange(),
-                
-                # MLC Offsets
-                'max_offset_a': geoModel.get_MaxOffsetA(),
-                'max_offset_b': geoModel.get_MaxOffsetB(),
-                'mean_offset_a': geoModel.get_MeanOffsetA(),
-                'mean_offset_b': geoModel.get_MeanOffsetB(),
-                
-                # MLC Backlash
-                'mlc_backlash_max_a': geoModel.get_MLCBacklashMaxA(),
-                'mlc_backlash_max_b': geoModel.get_MLCBacklashMaxB(),
-                'mlc_backlash_mean_a': geoModel.get_MLCBacklashMeanA(),
-                'mlc_backlash_mean_b': geoModel.get_MLCBacklashMeanB(),
-                
-                # Jaws Group
-                'jaw_x1': geoModel.get_JawX1(),
-                'jaw_x2': geoModel.get_JawX2(),
-                'jaw_y1': geoModel.get_JawY1(),
-                'jaw_y2': geoModel.get_JawY2(),
-                
-                # Jaw Parallelism
-                'jaw_parallelism_x1': geoModel.get_JawParallelismX1(),
-                'jaw_parallelism_x2': geoModel.get_JawParallelismX2(),
-                'jaw_parallelism_y1': geoModel.get_JawParallelismY1(),
-                'jaw_parallelism_y2': geoModel.get_JawParallelismY2(),
+                'path': geoModel.get_path(),
+                'relUniformity': geoModel.get_relative_uniformity(),
+                'relOutput': geoModel.get_relative_output(),
+                'centerShift': geoModel.get_center_shift(),
+                'machineId': geoModel.get_machine_SN(),
+                'note': None  # Add note if available in the model
             }
 
-            # Upload to database
-            table_name = 'geo6xfff_data'  # Adjust table name as needed
+            # Upload basic beam data to the single beam table
+            table_name = 'beam'
             result = self.db_adapter.upload_beam_data(table_name, data)
             
-            # Optionally upload MLC leaf data to separate tables
-            # This could be done in a separate method or as part of this method
-            # For now, we'll skip individual leaf data to keep the main record simple
+            # ========================================================================
+            # COMMENTED OUT: Full geometry data extraction
+            # Uncomment when geometry_data table is created
+            # ========================================================================
+            
+            # # ---- Extract IsoCenterGroup data ----
+            # isocenter_data = {
+            #     'beam_id': result_id,  # Foreign key to beam table
+            #     'isoCenterSize': geoModel.get_IsoCenterSize(),
+            #     'isoCenterMVOffset': geoModel.get_IsoCenterMVOffset(),
+            #     'isoCenterKVOffset': geoModel.get_IsoCenterKVOffset(),
+            # }
+            # 
+            # # ---- Extract CollimationGroup data ----
+            # collimation_data = {
+            #     'beam_id': result_id,
+            #     'collimationRotationOffset': geoModel.get_CollimationRotationOffset(),
+            # }
+            # 
+            # # ---- Extract GantryGroup data ----
+            # gantry_data = {
+            #     'beam_id': result_id,
+            #     'gantryAbsolute': geoModel.get_GantryAbsolute(),
+            #     'gantryRelative': geoModel.get_GantryRelative(),
+            # }
+            # 
+            # # ---- Extract EnhancedCouchGroup data ----
+            # couch_data = {
+            #     'beam_id': result_id,
+            #     'couchMaxPositionError': geoModel.get_CouchMaxPositionError(),
+            #     'couchLat': geoModel.get_CouchLat(),
+            #     'couchLng': geoModel.get_CouchLng(),
+            #     'couchVrt': geoModel.get_CouchVrt(),
+            #     'couchRtnFine': geoModel.get_CouchRtnFine(),
+            #     'couchRtnLarge': geoModel.get_CouchRtnLarge(),
+            #     'rotationInducedCouchShiftFullRange': geoModel.get_RotationInducedCouchShiftFullRange(),
+            # }
+            # 
+            # # ---- Extract MLC Leaves data (A and B banks, leaves 11-50) ----
+            # mlc_leaves_a = {}
+            # mlc_leaves_b = {}
+            # for i in range(11, 51):
+            #     mlc_leaves_a[f"leaf_{i}"] = geoModel.get_MLCLeafA(i)
+            #     mlc_leaves_b[f"leaf_{i}"] = geoModel.get_MLCLeafB(i)
+            # 
+            # # ---- Extract MLC Offsets ----
+            # mlc_offset_data = {
+            #     'beam_id': result_id,
+            #     'mlcMaxOffsetA': geoModel.get_MaxOffsetA(),
+            #     'mlcMaxOffsetB': geoModel.get_MaxOffsetB(),
+            #     'mlcMeanOffsetA': geoModel.get_MeanOffsetA(),
+            #     'mlcMeanOffsetB': geoModel.get_MeanOffsetB(),
+            #     'mlcLeavesA': json.dumps(mlc_leaves_a),  # Store as JSONB
+            #     'mlcLeavesB': json.dumps(mlc_leaves_b),  # Store as JSONB
+            # }
+            # 
+            # # ---- Extract MLC Backlash data (A and B banks, leaves 11-50) ----
+            # mlc_backlash_a = {}
+            # mlc_backlash_b = {}
+            # for i in range(11, 51):
+            #     mlc_backlash_a[f"leaf_{i}"] = geoModel.get_MLCBacklashA(i)
+            #     mlc_backlash_b[f"leaf_{i}"] = geoModel.get_MLCBacklashB(i)
+            # 
+            # mlc_backlash_data = {
+            #     'beam_id': result_id,
+            #     'mlcBacklashMaxA': geoModel.get_MLCBacklashMaxA(),
+            #     'mlcBacklashMaxB': geoModel.get_MLCBacklashMaxB(),
+            #     'mlcBacklashMeanA': geoModel.get_MLCBacklashMeanA(),
+            #     'mlcBacklashMeanB': geoModel.get_MLCBacklashMeanB(),
+            #     'mlcBacklashA': json.dumps(mlc_backlash_a),  # Store as JSONB
+            #     'mlcBacklashB': json.dumps(mlc_backlash_b),  # Store as JSONB
+            # }
+            # 
+            # # ---- Extract Jaws data ----
+            # jaws_data = {
+            #     'beam_id': result_id,
+            #     'jawX1': geoModel.get_JawX1(),
+            #     'jawX2': geoModel.get_JawX2(),
+            #     'jawY1': geoModel.get_JawY1(),
+            #     'jawY2': geoModel.get_JawY2(),
+            # }
+            # 
+            # # ---- Extract Jaw Parallelism data ----
+            # jaw_parallelism_data = {
+            #     'beam_id': result_id,
+            #     'jawParallelismX1': geoModel.get_JawParallelismX1(),
+            #     'jawParallelismX2': geoModel.get_JawParallelismX2(),
+            #     'jawParallelismY1': geoModel.get_JawParallelismY1(),
+            #     'jawParallelismY2': geoModel.get_JawParallelismY2(),
+            # }
+            # 
+            # # ---- Upload to geometry tables ----
+            # # Uncomment and adjust table names when geometry tables are created
+            # # self.db_adapter.upload_beam_data('geometry_isocenter', isocenter_data)
+            # # self.db_adapter.upload_beam_data('geometry_collimation', collimation_data)
+            # # self.db_adapter.upload_beam_data('geometry_gantry', gantry_data)
+            # # self.db_adapter.upload_beam_data('geometry_couch', couch_data)
+            # # self.db_adapter.upload_beam_data('geometry_mlc', mlc_offset_data)
+            # # self.db_adapter.upload_beam_data('geometry_mlc_backlash', mlc_backlash_data)
+            # # self.db_adapter.upload_beam_data('geometry_jaws', jaws_data)
+            # # self.db_adapter.upload_beam_data('geometry_jaw_parallelism', jaw_parallelism_data)
+            
+            # ========================================================================
+            # END OF COMMENTED GEOMETRY DATA
+            # ========================================================================
             
             return result
 
