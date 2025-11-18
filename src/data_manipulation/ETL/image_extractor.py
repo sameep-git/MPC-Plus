@@ -18,3 +18,5 @@ class image_extractor:
         tempImage = XIM(image.get_path())
         image.set_image(tempImage)
         print(tempImage.properties)
+
+    

@@ -61,6 +61,7 @@ class DataProcessor:
         image.set_date(image._getDateFromPathName(self.image_path))
         image.set_machine_SN(image._getSNFromPathName(self.image_path))
         self.image_ex.get_image(image)
+        print("Image Name: ", image.get_ImageName())
         #return image  # optional if you want to keep a reference to the image object
 
 
