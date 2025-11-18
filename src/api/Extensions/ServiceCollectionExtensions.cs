@@ -1,0 +1,136 @@
+using Api.Configuration;
+using Api.Repositories;
+using Api.Repositories.Abstractions;
+using Api.Repositories.InMemory;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Supabase;
+
+namespace Api.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddMachineDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        var databaseProvider = configuration[$"{DatabaseOptions.SectionName}:Provider"] ?? new DatabaseOptions().Provider;
+
+        switch (databaseProvider.ToLowerInvariant())
+        {
+            case "supabase":
+                services.AddSingleton<InMemoryMachineRepository>();
+                services.AddSupabaseMachineDataAccess(configuration);
+                break;
+            case "inmemory":
+            case "mock":
+                services.AddSingleton<InMemoryMachineRepository>();
+                services.AddInMemoryMachineDataAccess();
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'.");
+        }
+
+        return services;
+    }
+
+    private static IServiceCollection AddSupabaseMachineDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<SupabaseSettings>(configuration.GetSection(SupabaseSettings.SectionName));
+
+        services.AddScoped<IMachineRepository>(provider =>
+        {
+            var settings = provider.GetRequiredService<IOptions<SupabaseSettings>>().Value;
+            var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+            if (string.IsNullOrWhiteSpace(settings.Url) || string.IsNullOrWhiteSpace(settings.Key))
+            {
+                loggerFactory
+                    .CreateLogger("DataAccess")
+                    .LogWarning("Supabase credentials missing. Using in-memory machine repository.");
+
+                return provider.GetRequiredService<InMemoryMachineRepository>();
+            }
+
+            var options = new SupabaseOptions
+            {
+                AutoConnectRealtime = false
+            };
+
+            var client = new Client(settings.Url, settings.Key, options);
+            client.InitializeAsync().GetAwaiter().GetResult();
+
+            var logger = loggerFactory.CreateLogger<SupabaseMachineRepository>();
+            return new SupabaseMachineRepository(client, logger);
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddInMemoryMachineDataAccess(this IServiceCollection services)
+    {
+        services.AddSingleton<IMachineRepository>(provider => provider.GetRequiredService<InMemoryMachineRepository>());
+        return services;
+    }
+
+    public static IServiceCollection AddBeamDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        var databaseProvider = configuration[$"{DatabaseOptions.SectionName}:Provider"] ?? new DatabaseOptions().Provider;
+
+        switch (databaseProvider.ToLowerInvariant())
+        {
+            case "supabase":
+                services.AddSingleton<InMemoryBeamRepository>();
+                services.AddSupabaseBeamDataAccess(configuration);
+                break;
+            case "inmemory":
+            case "mock":
+                services.AddSingleton<InMemoryBeamRepository>();
+                services.AddInMemoryBeamDataAccess();
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'.");
+        }
+
+        return services;
+    }
+
+    private static IServiceCollection AddSupabaseBeamDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<SupabaseSettings>(configuration.GetSection(SupabaseSettings.SectionName));
+
+        services.AddScoped<IBeamRepository>(provider =>
+        {
+            var settings = provider.GetRequiredService<IOptions<SupabaseSettings>>().Value;
+            var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+            if (string.IsNullOrWhiteSpace(settings.Url) || string.IsNullOrWhiteSpace(settings.Key))
+            {
+                loggerFactory
+                    .CreateLogger("DataAccess")
+                    .LogWarning("Supabase credentials missing. Using in-memory beam repository.");
+
+                return provider.GetRequiredService<InMemoryBeamRepository>();
+            }
+
+            var options = new SupabaseOptions
+            {
+                AutoConnectRealtime = false
+            };
+
+            var client = new Client(settings.Url, settings.Key, options);
+            client.InitializeAsync().GetAwaiter().GetResult();
+
+            var logger = loggerFactory.CreateLogger<SupabaseBeamRepository>();
+            return new SupabaseBeamRepository(client, logger);
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddInMemoryBeamDataAccess(this IServiceCollection services)
+    {
+        services.AddSingleton<IBeamRepository>(provider => provider.GetRequiredService<InMemoryBeamRepository>());
+        return services;
+    }
+}
+

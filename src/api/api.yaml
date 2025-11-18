@@ -1,0 +1,782 @@
+openapi: 3.0.0
+info:
+  title: Senior Design Project API
+  description: API for managing beam data, machines, results, baselines, and thresholds
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+tags:
+  - name: Beam
+    description: Operations related to beam data
+  - name: Machines
+    description: Operations related to machines
+  - name: Results
+    description: Operations related to results
+  - name: Baselines
+    description: Operations related to baselines
+  - name: Thresholds
+    description: Operations related to thresholds
+  - name: Updates
+    description: Operations related to updates
+  - name: Authentication
+    description: Authentication operations
+  - name: Image
+    description: Image operations
+
+paths:
+  /beam:
+    get:
+      tags:
+        - Beam
+      summary: Get beam data by type, date, and machine
+      description: Retrieves beam data filtered by various parameters
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Type of beam
+        - name: machine-id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Machine identifier
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Specific date for beam data
+        - name: start-date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Start date for date range
+        - name: end-date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: End date for date range
+        - name: range
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [week, month, quarter]
+          description: Predefined time range
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Beam'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+    
+    post:
+      tags:
+        - Beam
+      summary: Add a note to a beam
+      description: Creates or updates a note for a specific beam
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Beam identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                  description: Note to add to the beam
+      responses:
+        '201':
+          description: Note added successfully
+        '400':
+          description: Bad request
+    
+    put:
+      tags:
+        - Beam
+      summary: Update a note for a beam
+      description: Updates an existing note for a specific beam
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Beam identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                  description: Updated note content
+      responses:
+        '200':
+          description: Note updated successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Beam not found
+
+  /beam/{beamId}:
+    get:
+      tags:
+        - Beam
+      summary: Get specific beam by ID
+      description: Retrieves a single beam by its identifier
+      parameters:
+        - name: beamId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique beam identifier
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Beam'
+        '404':
+          description: Beam not found
+
+  /beam/types:
+    get:
+      tags:
+        - Beam
+      summary: Get all beam types
+      description: Returns a list of all available beam types
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["6e", "9e", "12e", "16e", "10x", "15x", "6xff"]
+
+  /machines:
+    get:
+      tags:
+        - Machines
+      summary: Get all machines
+      description: Returns a list of all machines
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Machine'
+    
+    post:
+      tags:
+        - Machines
+      summary: Add a new machine
+      description: Creates a new machine entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Machine'
+      responses:
+        '201':
+          description: Machine created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Machine'
+        '400':
+          description: Bad request
+
+  /machines/{machineId}:
+    put:
+      tags:
+        - Machines
+      summary: Update a machine
+      description: Updates machine information (e.g., location)
+      parameters:
+        - name: machineId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Machine identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Machine'
+      responses:
+        '200':
+          description: Machine updated successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Machine not found
+    
+    delete:
+      tags:
+        - Machines
+      summary: Delete a machine
+      description: Removes a machine from the system
+      parameters:
+        - name: machineId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Machine identifier
+      responses:
+        '204':
+          description: Machine deleted successfully
+        '404':
+          description: Machine not found
+
+  /results:
+    get:
+      tags:
+        - Results
+      summary: Get results for a specific month and year
+      description: Returns beam check results for the specified time period
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          description: Month (1-12)
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Year
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Result'
+        '400':
+          description: Bad request
+
+  /baselines/all:
+    get:
+      tags:
+        - Baselines
+      summary: Get all baselines
+      description: Returns all baselines for different metrics
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Baseline'
+
+  /baseline:
+    get:
+      tags:
+        - Baselines
+      summary: Get baseline for specific parameters
+      description: Retrieves baseline data for a specific machine, check type, and metric
+      parameters:
+        - name: machineId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Machine identifier
+        - name: checkType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [geometry, beam]
+          description: Type of check
+        - name: beamVariant
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Beam variant (e.g., 6x, 6e)
+        - name: metricType
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Type of metric
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Baseline'
+        '404':
+          description: Baseline not found
+    
+    put:
+      tags:
+        - Baselines
+      summary: Update baseline
+      description: Updates baseline data for specific parameters
+      parameters:
+        - name: machineId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Machine identifier
+        - name: checkType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [geometry, beam]
+          description: Type of check
+        - name: beamVariant
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Beam variant
+        - name: metricType
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Type of metric
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Date of baseline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Baseline'
+      responses:
+        '200':
+          description: Baseline updated successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Baseline not found
+
+  /thresholds/all:
+    get:
+      tags:
+        - Thresholds
+      summary: Get all thresholds
+      description: Returns all threshold configurations
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Threshold'
+
+  /thresholds:
+    get:
+      tags:
+        - Thresholds
+      summary: Get specific threshold
+      description: Retrieves threshold data for specific parameters
+      parameters:
+        - name: machineId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Machine identifier
+        - name: checkType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [geometry, beam]
+          description: Type of check
+        - name: beamVariant
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Beam variant
+        - name: metricType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [output_change, uniformity_change, center_shift]
+          description: Type of metric
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Threshold'
+        '404':
+          description: Threshold not found
+
+  /updates:
+    get:
+      tags:
+        - Updates
+      summary: Get all updates
+      description: Returns a list of all updates
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Update'
+    
+    post:
+      tags:
+        - Updates
+      summary: Create a new update
+      description: Adds a new update entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Update'
+      responses:
+        '201':
+          description: Update created successfully
+        '400':
+          description: Bad request
+    
+    put:
+      tags:
+        - Updates
+      summary: Update an existing update
+      description: Modifies an existing update entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Update'
+      responses:
+        '200':
+          description: Update modified successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Update not found
+    
+    delete:
+      tags:
+        - Updates
+      summary: Delete an update
+      description: Removes an update entry
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Update identifier
+      responses:
+        '204':
+          description: Update deleted successfully
+        '404':
+          description: Update not found
+
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticates a user and returns a token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+        '401':
+          description: Unauthorized
+
+  /image:
+    get:
+      tags:
+        - Image
+      summary: Get image
+      description: Retrieves image data
+      responses:
+        '200':
+          description: Successful response
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+
+  /geocheck:
+    get:
+      tags:
+        - Geocheck
+      summary: Get geometry check data
+      description: Retrieves geometry check information
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  schemas:
+    Beam:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the beam
+        type:
+          type: string
+          description: Type of beam (e.g., 6e, 9e, 12e, 16e, 10x, 15x, 6xff)
+        date:
+          type: string
+          format: date
+          description: Date of the beam data
+        path:
+          type: string
+          description: File path to beam data
+        relUniformity:
+          type: number
+          format: double
+          description: Relative uniformity value
+        relOutput:
+          type: number
+          format: double
+          description: Relative output value
+        centerShift:
+          type: number
+          format: double
+          description: Center shift value (for X-Beam only)
+        machineId:
+          type: string
+          description: Associated machine identifier
+        note:
+          type: string
+          description: Notes about the beam
+      required:
+        - id
+        - type
+        - date
+        - machineId
+
+    Machine:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the machine
+        location:
+          type: string
+          description: Physical location of the machine
+        name:
+          type: string
+          description: Name of the machine
+        type:
+          type: string
+          description: Type of machine
+      required:
+        - id
+        - location
+        - name
+        - type
+
+    Result:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the result
+        month:
+          type: integer
+          description: Month of the result
+        year:
+          type: integer
+          description: Year of the result
+        beamCheck:
+          type: object
+          description: Beam check data
+        status:
+          type: string
+          description: Status of the check
+
+    Baseline:
+      type: object
+      properties:
+        machineId:
+          type: string
+          description: Machine identifier
+        checkType:
+          type: string
+          enum: [geometry, beam]
+          description: Type of check
+        beamVariant:
+          type: string
+          description: Beam variant
+        metricType:
+          type: string
+          description: Type of metric (e.g., all beam type metrics)
+        date:
+          type: string
+          format: date
+          description: Date of baseline
+        value:
+          type: number
+          description: Baseline value
+      required:
+        - machineId
+        - checkType
+        - metricType
+        - date
+
+    Threshold:
+      type: object
+      properties:
+        machineId:
+          type: string
+          description: Machine identifier
+        checkType:
+          type: string
+          enum: [geometry, beam]
+          description: Type of check
+        beamVariant:
+          type: string
+          description: Beam variant
+        metricType:
+          type: string
+          enum: [output_change, uniformity_change, center_shift]
+          description: Type of metric
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        value:
+          type: number
+          description: Threshold value
+      required:
+        - machineId
+        - checkType
+        - metricType
+        - lastUpdated
+
+    Update:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the update
+        machine:
+          type: string
+          description: Associated machine
+        info:
+          type: string
+          description: Update information
+        type:
+          type: string
+          description: Type of update
+      required:
+        - id
+        - machine
+        - info
+        - type
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

@@ -1,396 +1,472 @@
 """
-Supabase Uploader Module
-------------------------
-This module handles uploading beam quality assurance data to Supabase database.
+Uploader Module
+----------------
+This module defines the `Uploader` class, responsible for uploading beam data
+from model objects to a database. It follows the Program-to-an-Interface principle,
+allowing easy switching between different database management systems.
 
-The Uploader class connects to Supabase and provides methods to upload:
-    - Electron beam data (EBeamModel) to beam-specific tables
-    - X-ray beam data (XBeamModel) to beam-specific tables
-    - Geometry check data (Geo6xfffModel) to the 6x geometry table
+The module includes:
+    - DatabaseAdapter: Abstract interface for database operations
+    - SupabaseAdapter: Concrete implementation for Supabase DBMS
+    - Uploader: Main class that uses model getters to upload data
 
-Each of the 7 beam types (6e, 9e, 12e, 16e, 10x, 15x, 6x) has its own table
-in the Supabase database to maintain data integrity and optimize queries.
+Supported beam models:
+    - Electron beams: `EBeamModel`
+    - X-ray beams: `XBeamModel`
+    - Geometric beams: `Geo6xfffModel`
 """
 
-from supabase import create_client, Client
+from abc import ABC, abstractmethod
 from datetime import datetime
 from decimal import Decimal
+from typing import Dict, Any, Optional
 import json
+
+
+class DatabaseAdapter(ABC):
+    """
+    Abstract interface for database operations.
+    Implementations should provide concrete methods for connecting and uploading data.
+    """
+
+    @abstractmethod
+    def connect(self, connection_params: Dict[str, Any]) -> bool:
+        """
+        Establish connection to the database.
+        
+        Args:
+            connection_params: Dictionary containing connection parameters
+                              (e.g., url, key, etc.)
+        
+        Returns:
+            bool: True if connection successful, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def upload_beam_data(self, table_name: str, data: Dict[str, Any]) -> bool:
+        """
+        Upload beam data to the specified table.
+        
+        Args:
+            table_name: Name of the database table
+            data: Dictionary containing the data to upload
+        
+        Returns:
+            bool: True if upload successful, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def close(self):
+        """Close the database connection."""
+        pass
+
+
+class SupabaseAdapter(DatabaseAdapter):
+    """
+    Concrete implementation of DatabaseAdapter for Supabase DBMS.
+    Uses the supabase-py library to interact with Supabase.
+    """
+
+    def __init__(self):
+        self.client = None
+        self.connected = False
+
+    def connect(self, connection_params: Dict[str, Any]) -> bool:
+        """
+        Establish connection to Supabase.
+        
+        Args:
+            connection_params: Dictionary with 'url' and 'key' keys
+        
+        Returns:
+            bool: True if connection successful, False otherwise
+        """
+        try:
+            from supabase import create_client, Client
+            
+            url = connection_params.get('url')
+            key = connection_params.get('key')
+            
+            if not url or not key:
+                print("Error: Supabase connection requires 'url' and 'key' parameters")
+                return False
+            
+            self.client: Client = create_client(url, key)
+            self.connected = True
+            print("Successfully connected to Supabase")
+            return True
+            
+        except ImportError:
+            print("Error: supabase-py library not installed. Install with: pip install supabase")
+            return False
+        except Exception as e:
+            print(f"Error connecting to Supabase: {e}")
+            self.connected = False
+            return False
+
+    def upload_beam_data(self, table_name: str, data: Dict[str, Any]) -> bool:
+        """
+        Upload beam data to Supabase table.
+        
+        Args:
+            table_name: Name of the Supabase table
+            data: Dictionary containing the data to upload
+        
+        Returns:
+            bool: True if upload successful, False otherwise
+        """
+        if not self.connected or not self.client:
+            print("Error: Not connected to Supabase")
+            return False
+        
+        try:
+            # Convert Decimal to float for JSON serialization
+            serialized_data = self._serialize_data(data)
+            
+            # Insert data into Supabase table
+            response = self.client.table(table_name).insert(serialized_data).execute()
+            
+            if response.data:
+                print(f"Successfully uploaded data to {table_name}")
+                return True
+            else:
+                print(f"Warning: No data returned from Supabase insert")
+                return False
+                
+        except Exception as e:
+            print(f"Error uploading data to Supabase: {e}")
+            return False
+
+    def _serialize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Convert data types to JSON-serializable formats.
+        
+        Args:
+            data: Dictionary with potentially non-serializable values
+        
+        Returns:
+            Dictionary with serialized values
+        """
+        serialized = {}
+        for key, value in data.items():
+            if isinstance(value, Decimal):
+                serialized[key] = float(value)
+            elif isinstance(value, datetime):
+                serialized[key] = value.isoformat()
+            elif value is None:
+                serialized[key] = None
+            else:
+                serialized[key] = value
+        return serialized
+
+    def close(self):
+        """Close the Supabase connection."""
+        self.client = None
+        self.connected = False
+        print("Supabase connection closed")
 
 
 class Uploader:
     """
-    Handles uploading beam QA data to Supabase database.
-    
-    Connects to Supabase using provided credentials and uploads data from
-    model instances (EBeamModel, XBeamModel, Geo6xfffModel) to their respective
-    tables based on beam type.
+    Handles data upload from model objects to a database.
+    Each method corresponds to a specific model type and uses model getters
+    to retrieve data for upload.
     """
-    
-    def __init__(self, supabase_url: str, supabase_key: str):
+
+    def __init__(self, db_adapter: Optional[DatabaseAdapter] = None):
         """
-        Initialize the Uploader with Supabase connection credentials.
-        
-        
-        Raises:
-            Exception: If connection to Supabase fails
-        """
-        try:
-            self.supabase: Client = create_client(supabase_url, supabase_key)
-            print(f"✓ Successfully connected to Supabase")
-        except Exception as e:
-            print(f"✗ Failed to connect to Supabase: {e}")
-            raise
-    
-    def _convert_decimal_to_float(self, value):
-        """
-        Convert Decimal values to float for JSON serialization.
+        Initialize the Uploader with a database adapter.
         
         Args:
-            value: The value to convert (Decimal, datetime, or other)
-            
-        Returns:
-            Converted value suitable for JSON serialization
+            db_adapter: Database adapter instance. If None, defaults to SupabaseAdapter
         """
-        if isinstance(value, Decimal):
-            return float(value)
-        elif isinstance(value, datetime):
-            return value.isoformat()
-        return value
-    
-    def EBeamUploader(self, ebeam_model):
-        """
-        Upload electron beam data to the appropriate Supabase table.
+        if db_adapter is None:
+            self.db_adapter = SupabaseAdapter()
+        else:
+            self.db_adapter = db_adapter
         
-        Takes an EBeamModel instance and uploads all data to the table
-        corresponding to the beam type (6e, 9e, 12e, or 16e).
+        self.connected = False
+
+    def connect(self, connection_params: Dict[str, Any]) -> bool:
+        """
+        Connect to the database using the adapter.
         
         Args:
-            ebeam_model: Instance of EBeamModel with populated data
-            
-        Returns:
-            dict: Response from Supabase API containing inserted record
-            
-        Raises:
-            ValueError: If beam type is not recognized
-            Exception: If upload to Supabase fails
+            connection_params: Dictionary containing connection parameters
+        """
+        self.connected = self.db_adapter.connect(connection_params)
+        return self.connected
+
+    def upload(self, model):
+        """
+        Automatically calls the correct upload method
+        based on the type of model object passed in.
+
+        Supported models:
+            - EBeamModel
+            - XBeamModel
+            - Geo6xfffModel
+        """
+        if not self.connected:
+            print("Error: Not connected to database. Call connect() first.")
+            return False
+
+        model_type = type(model).__name__.lower()
+
+        if "ebeam" in model_type:
+            return self.eModelUpload(model)
+        elif "xbeam" in model_type:
+            return self.xModelUpload(model)
+        elif "geo" in model_type:
+            return self.geoModelUpload(model)
+        else:
+            raise TypeError(f"Unsupported model type: {type(model).__name__}")
+
+    def uploadTest(self, model):
+        """
+        Automatically calls the correct upload method
+        based on the type of model object passed in, with test output.
+
+        Supported models:
+            - EBeamModel
+            - XBeamModel
+            - Geo6xfffModel
+        """
+        if not self.connected:
+            print("Error: Not connected to database. Call connect() first.")
+            return False
+
+        model_type = type(model).__name__.lower()
+
+        if "ebeam" in model_type:
+            return self.testeModelUpload(model)
+        elif "xbeam" in model_type:
+            return self.testxModelUpload(model)
+        elif "geo" in model_type:
+            return self.testGeoModelUpload(model)
+        else:
+            raise TypeError(f"Unsupported model type: {type(model).__name__}")
+
+    # --- E-BEAM ---
+    def eModelUpload(self, eBeam):
+        """
+        Upload data for E-beam model to database.
         """
         try:
-            # Get beam type to determine table name
-            beam_type = ebeam_model.get_type()
-            
-            # Validate beam type
-            valid_ebeam_types = ['6e', '9e', '12e', '16e']
-            if beam_type not in valid_ebeam_types:
-                raise ValueError(f"Invalid E-beam type: {beam_type}. Must be one of {valid_ebeam_types}")
-            
-            # Determine table name based on beam type
-            table_name = f"beam_{beam_type}"  # e.g., "beam_6e", "beam_9e"
-            
-            # Extract all data using getters
+            # Prepare data dictionary using model getters
             data = {
-                'beam_type': beam_type,
-                'machine_id': ebeam_model.get_machine_id(),
-                'measurement_date': self._convert_decimal_to_float(ebeam_model.get_date()),
-                'file_path': ebeam_model.get_path(),
-                'relative_uniformity': self._convert_decimal_to_float(ebeam_model.get_relative_uniformity()),
-                'relative_output': self._convert_decimal_to_float(ebeam_model.get_relative_output()),
-                'note': ebeam_model.get_note() if ebeam_model.get_note() else None,
-                'uploaded_at': datetime.now().isoformat()
+                'date': eBeam.get_date(),
+                'machine_sn': eBeam.get_machine_SN(),
+                'beam_type': eBeam.get_type(),
+                'is_baseline': eBeam.get_baseline(),
+                'relative_output': eBeam.get_relative_output(),
+                'relative_uniformity': eBeam.get_relative_uniformity(),
             }
-            
-            # Upload to Supabase
-            print(f"Uploading E-beam ({beam_type}) data to table '{table_name}'...")
-            response = self.supabase.table(table_name).insert(data).execute()
-            
-            print(f"✓ Successfully uploaded E-beam ({beam_type}) data")
-            return response
-            
-        except ValueError as ve:
-            print(f"✗ Validation Error: {ve}")
-            raise
+
+            # Upload to database
+            table_name = 'ebeam_data'  # Adjust table name as needed
+            return self.db_adapter.upload_beam_data(table_name, data)
+
         except Exception as e:
-            print(f"✗ Error uploading E-beam data: {e}")
-            raise
-    
-    def XBeamUploader(self, xbeam_model):
+            print(f"Error during E-beam upload: {e}")
+            return False
+
+
+    # --- X-BEAM ---
+    def xModelUpload(self, xBeam):
         """
-        Upload X-ray beam data to the appropriate Supabase table.
-        
-        Takes an XBeamModel instance and uploads all data to the table
-        corresponding to the beam type (10x or 15x).
-        
-        Args:
-            xbeam_model: Instance of XBeamModel with populated data
-            
-        Returns:
-            dict: Response from Supabase API containing inserted record
-            
-        Raises:
-            ValueError: If beam type is not recognized
-            Exception: If upload to Supabase fails
+        Upload data for X-beam model to database.
         """
         try:
-            # Get beam type to determine table name
-            beam_type = xbeam_model.get_type()
-            
-            # Validate beam type
-            valid_xbeam_types = ['10x', '15x']
-            if beam_type not in valid_xbeam_types:
-                raise ValueError(f"Invalid X-beam type: {beam_type}. Must be one of {valid_xbeam_types}")
-            
-            # Determine table name based on beam type
-            table_name = f"beam_{beam_type}"  # e.g., "beam_10x", "beam_15x"
-            
-            # Extract all data using getters
+            # Prepare data dictionary using model getters
             data = {
-                'beam_type': beam_type,
-                'machine_id': xbeam_model.get_machine_id(),
-                'measurement_date': self._convert_decimal_to_float(xbeam_model.get_date()),
-                'file_path': xbeam_model.get_path(),
-                'relative_uniformity': self._convert_decimal_to_float(xbeam_model.get_relative_uniformity()),
-                'relative_output': self._convert_decimal_to_float(xbeam_model.get_relative_output()),
-                'center_shift': self._convert_decimal_to_float(xbeam_model.get_center_shift()),
-                'note': xbeam_model.get_note() if xbeam_model.get_note() else None,
-                'uploaded_at': datetime.now().isoformat()
+                'date': xBeam.get_date(),
+                'machine_sn': xBeam.get_machine_SN(),
+                'beam_type': xBeam.get_type(),
+                'is_baseline': xBeam.get_baseline(),
+                'relative_output': xBeam.get_relative_output(),
+                'relative_uniformity': xBeam.get_relative_uniformity(),
+                'center_shift': xBeam.get_center_shift(),
             }
-            
-            # Upload to Supabase
-            print(f"Uploading X-beam ({beam_type}) data to table '{table_name}'...")
-            response = self.supabase.table(table_name).insert(data).execute()
-            
-            print(f"✓ Successfully uploaded X-beam ({beam_type}) data")
-            return response
-            
-        except ValueError as ve:
-            print(f"✗ Validation Error: {ve}")
-            raise
+
+            # Upload to database
+            table_name = 'xbeam_data'  # Adjust table name as needed
+            return self.db_adapter.upload_beam_data(table_name, data)
+
         except Exception as e:
-            print(f"✗ Error uploading X-beam data: {e}")
-            raise
-    
-    def GeoBeamUploader(self, geo_model):
+            print(f"Error during X-beam upload: {e}")
+            return False
+
+
+    # --- GEO MODEL ---
+    def geoModelUpload(self, geoModel):
         """
-        Upload geometry check beam data to the Supabase 6x geometry table.
-        
-        Takes a Geo6xfffModel instance and uploads all comprehensive geometry
-        check data including isocenter, beam, gantry, couch, MLC leaves,
-        and jaw measurements.
-        
-        Args:
-            geo_model: Instance of Geo6xfffModel with populated data
-            
-        Returns:
-            dict: Response from Supabase API containing inserted record
-            
-        Raises:
-            Exception: If upload to Supabase fails
+        Upload data for Geo6xfffModel to database.
         """
         try:
-            # Table name for geometry checks
-            table_name = "beam_6x"
-            
-            # Get beam type
-            beam_type = geo_model.get_type()
-            
-            # ---- Extract IsoCenterGroup data ----
-            isocenter_data = {
-                'isocenter_size': self._convert_decimal_to_float(geo_model.get_IsoCenterSize()),
-                'isocenter_mv_offset': self._convert_decimal_to_float(geo_model.get_IsoCenterMVOffset()),
-                'isocenter_kv_offset': self._convert_decimal_to_float(geo_model.get_IsoCenterKVOffset()),
-            }
-            
-            # ---- Extract BeamGroup data ----
-            beam_data = {
-                'relative_output': self._convert_decimal_to_float(geo_model.get_relative_output()),
-                'relative_uniformity': self._convert_decimal_to_float(geo_model.get_relative_uniformity()),
-                'center_shift': self._convert_decimal_to_float(geo_model.get_center_shift()),
-            }
-            
-            # ---- Extract CollimationGroup data ----
-            collimation_data = {
-                'collimation_rotation_offset': self._convert_decimal_to_float(geo_model.get_CollimationRotationOffset()),
-            }
-            
-            # ---- Extract GantryGroup data ----
-            gantry_data = {
-                'gantry_absolute': self._convert_decimal_to_float(geo_model.get_GantryAbsolute()),
-                'gantry_relative': self._convert_decimal_to_float(geo_model.get_GantryRelative()),
-            }
-            
-            # ---- Extract EnhancedCouchGroup data ----
-            couch_data = {
-                'couch_max_position_error': self._convert_decimal_to_float(geo_model.get_CouchMaxPositionError()),
-                'couch_lat': self._convert_decimal_to_float(geo_model.get_CouchLat()),
-                'couch_lng': self._convert_decimal_to_float(geo_model.get_CouchLng()),
-                'couch_vrt': self._convert_decimal_to_float(geo_model.get_CouchVrt()),
-                'couch_rtn_fine': self._convert_decimal_to_float(geo_model.get_CouchRtnFine()),
-                'couch_rtn_large': self._convert_decimal_to_float(geo_model.get_CouchRtnLarge()),
-                'rotation_induced_couch_shift_full_range': self._convert_decimal_to_float(
-                    geo_model.get_RotationInducedCouchShiftFullRange()
-                ),
-            }
-            
-            # ---- Extract MLC Leaves data (A and B banks, leaves 11-50) ----
-            mlc_leaves_a = {}
-            mlc_leaves_b = {}
-            for i in range(11, 51):
-                mlc_leaves_a[f"leaf_{i}"] = self._convert_decimal_to_float(geo_model.get_MLCLeafA(i))
-                mlc_leaves_b[f"leaf_{i}"] = self._convert_decimal_to_float(geo_model.get_MLCLeafB(i))
-            
-            # ---- Extract MLC Offsets ----
-            mlc_offset_data = {
-                'mlc_max_offset_a': self._convert_decimal_to_float(geo_model.get_MaxOffsetA()),
-                'mlc_max_offset_b': self._convert_decimal_to_float(geo_model.get_MaxOffsetB()),
-                'mlc_mean_offset_a': self._convert_decimal_to_float(geo_model.get_MeanOffsetA()),
-                'mlc_mean_offset_b': self._convert_decimal_to_float(geo_model.get_MeanOffsetB()),
-            }
-            
-            # ---- Extract MLC Backlash data (A and B banks, leaves 11-50) ----
-            mlc_backlash_a = {}
-            mlc_backlash_b = {}
-            for i in range(11, 51):
-                mlc_backlash_a[f"leaf_{i}"] = self._convert_decimal_to_float(geo_model.get_MLCBacklashA(i))
-                mlc_backlash_b[f"leaf_{i}"] = self._convert_decimal_to_float(geo_model.get_MLCBacklashB(i))
-            
-            mlc_backlash_data = {
-                'mlc_backlash_max_a': self._convert_decimal_to_float(geo_model.get_MLCBacklashMaxA()),
-                'mlc_backlash_max_b': self._convert_decimal_to_float(geo_model.get_MLCBacklashMaxB()),
-                'mlc_backlash_mean_a': self._convert_decimal_to_float(geo_model.get_MLCBacklashMeanA()),
-                'mlc_backlash_mean_b': self._convert_decimal_to_float(geo_model.get_MLCBacklashMeanB()),
-            }
-            
-            # ---- Extract Jaws data ----
-            jaws_data = {
-                'jaw_x1': self._convert_decimal_to_float(geo_model.get_JawX1()),
-                'jaw_x2': self._convert_decimal_to_float(geo_model.get_JawX2()),
-                'jaw_y1': self._convert_decimal_to_float(geo_model.get_JawY1()),
-                'jaw_y2': self._convert_decimal_to_float(geo_model.get_JawY2()),
-            }
-            
-            # ---- Extract Jaw Parallelism data ----
-            jaw_parallelism_data = {
-                'jaw_parallelism_x1': self._convert_decimal_to_float(geo_model.get_JawParallelismX1()),
-                'jaw_parallelism_x2': self._convert_decimal_to_float(geo_model.get_JawParallelismX2()),
-                'jaw_parallelism_y1': self._convert_decimal_to_float(geo_model.get_JawParallelismY1()),
-                'jaw_parallelism_y2': self._convert_decimal_to_float(geo_model.get_JawParallelismY2()),
-            }
-            
-            # ---- Combine all data into single record ----
+            # Prepare data dictionary using model getters
             data = {
-                'beam_type': beam_type,
-                'machine_id': geo_model.get_machine_id(),
-                'measurement_date': self._convert_decimal_to_float(geo_model.get_date()),
-                'file_path': geo_model.get_path(),
+                'date': geoModel.get_date(),
+                'machine_sn': geoModel.get_machine_SN(),
+                'beam_type': geoModel.get_type(),
+                'is_baseline': geoModel.get_baseline(),
                 
                 # IsoCenterGroup
-                **isocenter_data,
+                'iso_center_size': geoModel.get_IsoCenterSize(),
+                'iso_center_mv_offset': geoModel.get_IsoCenterMVOffset(),
+                'iso_center_kv_offset': geoModel.get_IsoCenterKVOffset(),
                 
                 # BeamGroup
-                **beam_data,
+                'relative_output': geoModel.get_relative_output(),
+                'relative_uniformity': geoModel.get_relative_uniformity(),
+                'center_shift': geoModel.get_center_shift(),
                 
                 # CollimationGroup
-                **collimation_data,
+                'collimation_rotation_offset': geoModel.get_CollimationRotationOffset(),
                 
                 # GantryGroup
-                **gantry_data,
+                'gantry_absolute': geoModel.get_GantryAbsolute(),
+                'gantry_relative': geoModel.get_GantryRelative(),
                 
                 # EnhancedCouchGroup
-                **couch_data,
-                
-                # MLC Leaves (stored as JSONB in database)
-                'mlc_leaves_a': json.dumps(mlc_leaves_a),
-                'mlc_leaves_b': json.dumps(mlc_leaves_b),
+                'couch_max_position_error': geoModel.get_CouchMaxPositionError(),
+                'couch_lat': geoModel.get_CouchLat(),
+                'couch_lng': geoModel.get_CouchLng(),
+                'couch_vrt': geoModel.get_CouchVrt(),
+                'couch_rtn_fine': geoModel.get_CouchRtnFine(),
+                'couch_rtn_large': geoModel.get_CouchRtnLarge(),
+                'rotation_induced_couch_shift_full_range': geoModel.get_RotationInducedCouchShiftFullRange(),
                 
                 # MLC Offsets
-                **mlc_offset_data,
+                'max_offset_a': geoModel.get_MaxOffsetA(),
+                'max_offset_b': geoModel.get_MaxOffsetB(),
+                'mean_offset_a': geoModel.get_MeanOffsetA(),
+                'mean_offset_b': geoModel.get_MeanOffsetB(),
                 
-                # MLC Backlash (stored as JSONB in database)
-                'mlc_backlash_a': json.dumps(mlc_backlash_a),
-                'mlc_backlash_b': json.dumps(mlc_backlash_b),
-                **mlc_backlash_data,
+                # MLC Backlash
+                'mlc_backlash_max_a': geoModel.get_MLCBacklashMaxA(),
+                'mlc_backlash_max_b': geoModel.get_MLCBacklashMaxB(),
+                'mlc_backlash_mean_a': geoModel.get_MLCBacklashMeanA(),
+                'mlc_backlash_mean_b': geoModel.get_MLCBacklashMeanB(),
                 
-                # Jaws
-                **jaws_data,
+                # Jaws Group
+                'jaw_x1': geoModel.get_JawX1(),
+                'jaw_x2': geoModel.get_JawX2(),
+                'jaw_y1': geoModel.get_JawY1(),
+                'jaw_y2': geoModel.get_JawY2(),
                 
                 # Jaw Parallelism
-                **jaw_parallelism_data,
-                
-                # Note
-                'note': geo_model.get_note() if geo_model.get_note() else None,
-                
-                'uploaded_at': datetime.now().isoformat()
+                'jaw_parallelism_x1': geoModel.get_JawParallelismX1(),
+                'jaw_parallelism_x2': geoModel.get_JawParallelismX2(),
+                'jaw_parallelism_y1': geoModel.get_JawParallelismY1(),
+                'jaw_parallelism_y2': geoModel.get_JawParallelismY2(),
             }
+
+            # Upload to database
+            table_name = 'geo6xfff_data'  # Adjust table name as needed
+            result = self.db_adapter.upload_beam_data(table_name, data)
             
-            # Upload to Supabase
-            print(f"Uploading Geometry check (6x) data to table '{table_name}'...")
-            print(f"  → Uploading {len(data)} total fields")
-            print(f"  → Including 40 MLC leaves per bank (A & B)")
-            print(f"  → Including 40 MLC backlash values per bank (A & B)")
+            # Optionally upload MLC leaf data to separate tables
+            # This could be done in a separate method or as part of this method
+            # For now, we'll skip individual leaf data to keep the main record simple
             
-            response = self.supabase.table(table_name).insert(data).execute()
-            
-            print(f"✓ Successfully uploaded Geometry check (6x) data")
-            return response
-            
+            return result
+
         except Exception as e:
-            print(f"✗ Error uploading Geometry check data: {e}")
-            raise
+            print(f"Error during Geo model upload: {e}")
+            return False
 
+    def uploadMLCLeaves(self, geoModel, table_name: str = 'mlc_leaves_data'):
+        """
+        Upload MLC leaf data separately (optional helper method).
+        This can be called after geoModelUpload() if you want to store
+        individual leaf data in a separate table.
+        """
+        try:
+            leaves_data = []
+            
+            # Collect all MLC leaf A data
+            for i in range(11, 51):
+                leaves_data.append({
+                    'date': geoModel.get_date(),
+                    'machine_sn': geoModel.get_machine_SN(),
+                    'beam_type': geoModel.get_type(),
+                    'leaf_bank': 'A',
+                    'leaf_index': i,
+                    'leaf_value': geoModel.get_MLCLeafA(i),
+                })
+            
+            # Collect all MLC leaf B data
+            for i in range(11, 51):
+                leaves_data.append({
+                    'date': geoModel.get_date(),
+                    'machine_sn': geoModel.get_machine_SN(),
+                    'beam_type': geoModel.get_type(),
+                    'leaf_bank': 'B',
+                    'leaf_index': i,
+                    'leaf_value': geoModel.get_MLCLeafB(i),
+                })
+            
+            # Upload each leaf record
+            success_count = 0
+            for leaf_data in leaves_data:
+                if self.db_adapter.upload_beam_data(table_name, leaf_data):
+                    success_count += 1
+            
+            print(f"Uploaded {success_count}/{len(leaves_data)} MLC leaf records")
+            return success_count == len(leaves_data)
 
-# ---- Example Usage ----
-if __name__ == "__main__":
-    """
-    Example usage of the Uploader class.
-    
-    This demonstrates how to:
-    1. Initialize the Uploader with Supabase credentials
-    2. Create and populate model instances
-    3. Upload data to Supabase
-    """
-    
-    
-    SUPABASE_URL = "https://your-project.supabase.co"
-    SUPABASE_KEY = "your-anon-or-service-key"
-    
-    # Initialize uploader
-    uploader = Uploader(SUPABASE_URL, SUPABASE_KEY)
-    
-    # Example 1: Upload E-beam data
-    from ..models.EBeamModel import EBeamModel
-    
-    ebeam = EBeamModel()
-    ebeam.set_type("6e")
-    ebeam.set_date(datetime.now())
-    ebeam.set_path("/path/to/beam/data")
-    ebeam.set_relative_uniformity(Decimal("0.21"))
-    ebeam.set_relative_output(Decimal("0.05"))
-    
-    # uploader.EBeamUploader(ebeam)
-    
-    # Example 2: Upload X-beam data
-    from ..models.XBeamModel import XBeamModel
-    
-    xbeam = XBeamModel()
-    xbeam.set_type("15x")
-    xbeam.set_date(datetime.now())
-    xbeam.set_path("/path/to/beam/data")
-    xbeam.set_relative_uniformity(Decimal("0.22"))
-    xbeam.set_relative_output(Decimal("-0.82"))
-    xbeam.set_center_shift(Decimal("0.11"))
-    
-    # uploader.XBeamUploader(xbeam)
-    
-    # Example 3: Upload Geometry check data
-    from ..models.Geo6xfffModel import Geo6xfffModel
-    
-    geo = Geo6xfffModel()
-    geo.set_type("6x")
-    geo.set_date(datetime.now())
-    geo.set_path("/path/to/beam/data")
-    # ... set all other geometry parameters ...
-    
-    # uploader.GeoBeamUploader(geo)
-    
-    print("\nUpload examples completed!")
+        except Exception as e:
+            print(f"Error uploading MLC leaves: {e}")
+            return False
 
+    def uploadMLCBacklash(self, geoModel, table_name: str = 'mlc_backlash_data'):
+        """
+        Upload MLC backlash data separately (optional helper method).
+        This can be called after geoModelUpload() if you want to store
+        individual backlash data in a separate table.
+        """
+        try:
+            backlash_data = []
+            
+            # Collect all MLC backlash A data
+            for i in range(11, 51):
+                backlash_data.append({
+                    'date': geoModel.get_date(),
+                    'machine_sn': geoModel.get_machine_SN(),
+                    'beam_type': geoModel.get_type(),
+                    'leaf_bank': 'A',
+                    'leaf_index': i,
+                    'backlash_value': geoModel.get_MLCBacklashA(i),
+                })
+            
+            # Collect all MLC backlash B data
+            for i in range(11, 51):
+                backlash_data.append({
+                    'date': geoModel.get_date(),
+                    'machine_sn': geoModel.get_machine_SN(),
+                    'beam_type': geoModel.get_type(),
+                    'leaf_bank': 'B',
+                    'leaf_index': i,
+                    'backlash_value': geoModel.get_MLCBacklashB(i),
+                })
+            
+            # Upload each backlash record
+            success_count = 0
+            for backlash_record in backlash_data:
+                if self.db_adapter.upload_beam_data(table_name, backlash_record):
+                    success_count += 1
+            
+            print(f"Uploaded {success_count}/{len(backlash_data)} MLC backlash records")
+            return success_count == len(backlash_data)
+
+        except Exception as e:
+            print(f"Error uploading MLC backlash: {e}")
+            return False
+
+    def close(self):
+        """Close the database connection."""
+        self.db_adapter.close()
+        self.connected = False

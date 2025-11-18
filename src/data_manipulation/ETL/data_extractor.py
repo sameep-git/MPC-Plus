@@ -25,6 +25,47 @@ class data_extractor:
     to model attributes via setter methods.
     """
 
+    def extract(self, model):
+        """
+        Automatically calls the correct extraction method
+        based on the type of model object passed in.
+
+        Supported models:
+            - EBeamModel
+            - XBeamModel
+            - Geo6xfffModel
+        """
+        model_type = type(model).__name__.lower()
+
+        if "ebeam" in model_type:
+            return self.eModelExtraction(model)
+        elif "xbeam" in model_type:
+            return self.xModelExtraction(model)
+        elif "geo" in model_type:
+            return self.geoModelExtraction(model)
+        else:
+            raise TypeError(f"Unsupported model type: {type(model).__name__}")
+
+    def extractTest(self, model):
+        """
+        Automatically calls the correct extraction method
+        based on the type of model object passed in.
+
+        Supported models:
+            - EBeamModel
+            - XBeamModel
+            - Geo6xfffModel
+        """
+        model_type = type(model).__name__.lower()
+
+        if "ebeam" in model_type:
+            return self.testeModelExtraction(model)
+        elif "xbeam" in model_type:
+            return self.testxModelExtraction(model)
+        elif "geo" in model_type:
+            return self.testGeoModelExtraction(model)
+        else:
+            raise TypeError(f"Unsupported model type: {type(model).__name__}")
     # --- E-BEAM ---
     def eModelExtraction(self, eBeam):
         """
@@ -74,6 +115,8 @@ class data_extractor:
 
             # Print the values
         print(f"Date: {eBeam.get_date()}")
+        print(f"Machine SN: {eBeam.get_machine_SN()}")
+        print(f"Is Baseline: {eBeam.get_baseline()}")
         print(f"Relative Uniformity: {eBeam.get_relative_uniformity()}")
         print(f"Relative Output: {eBeam.get_relative_output()}")
 
@@ -135,6 +178,8 @@ class data_extractor:
 
             # Print the values
         print(f"Date: {xBeam.get_date()}")
+        print(f"Machine SN: {xBeam.get_machine_SN()}")
+        print(f"Is Baseline: {xBeam.get_baseline()}")
         print(f"Relative Uniformity: {xBeam.get_relative_uniformity()}")
         print(f"Relative Output: {xBeam.get_relative_output()}")
         print(f"Center Shift: {xBeam.get_center_shift()}")
@@ -291,6 +336,8 @@ class data_extractor:
 
         try:
             print(f"Date: {geoModel.get_date()}")
+            print(f"Machine SN: {geoModel.get_machine_SN()}")
+            print(f"Is Baseline: {geoModel.get_baseline()}")
             # IsoCenterGroup
             print(f"IsoCenterSize: {geoModel.get_IsoCenterSize()}")
             print(f"IsoCenterMVOffset: {geoModel.get_IsoCenterMVOffset()}")
