@@ -23,7 +23,6 @@ from typing import Dict, Any, Optional
 import logging
 import os
 import json
-import uuid
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
@@ -97,26 +96,19 @@ class SupabaseAdapter(DatabaseAdapter):
             key = connection_params.get('key')
             
             if not url or not key:
-                error_msg = "Error: Supabase connection requires 'url' and 'key' parameters"
-                logger.error(error_msg)
-                print(error_msg)
+                logger.error("Supabase connection requires 'url' and 'key' parameters")
                 return False
             
             self.client: Client = create_client(url, key)
             self.connected = True
             logger.info("Successfully connected to Supabase")
-            print("Successfully connected to Supabase")
             return True
             
         except ImportError:
-            error_msg = "Error: supabase-py library not installed. Install with: pip install supabase"
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error("supabase-py library not installed. Install with: pip install supabase")
             return False
         except Exception as e:
-            error_msg = f"Error connecting to Supabase: {e}"
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error(f"Error connecting to Supabase: {e}")
             self.connected = False
             return False
 
@@ -133,9 +125,7 @@ class SupabaseAdapter(DatabaseAdapter):
             bool: True if machine exists or was created successfully, False otherwise
         """
         if not self.connected or not self.client:
-            error_msg = "Error: Not connected to Supabase"
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error("Not connected to Supabase")
             return False
         
         try:
@@ -147,7 +137,7 @@ class SupabaseAdapter(DatabaseAdapter):
                 return True
             
             # Machine doesn't exist, create it
-            logger.info(f"Machine {machine_id} not found, creating it...")
+            logger.info(f"Creating machine {machine_id}...")
             
             # Extract location from path if provided
             location = "Unknown"
@@ -170,17 +160,14 @@ class SupabaseAdapter(DatabaseAdapter):
             response = self.client.table('machines').insert(machine_data).execute()
             
             if response.data:
-                logger.info(f"Successfully created machine {machine_id} in location {location}")
-                print(f"Created machine {machine_id} in {location}")
+                logger.info(f"Created machine {machine_id} in location {location}")
                 return True
             else:
-                logger.warning(f"Warning: No data returned when creating machine {machine_id}")
+                logger.warning(f"No data returned when creating machine {machine_id}")
                 return False
                 
         except Exception as e:
-            error_msg = f"Error ensuring machine exists: {e}"
-            logger.error(error_msg, exc_info=True)
-            print(error_msg)
+            logger.error(f"Error ensuring machine exists: {e}", exc_info=True)
             return False
 
     def upload_beam_data(self, table_name: str, data: Dict[str, Any], path: str = None) -> bool:
@@ -196,9 +183,7 @@ class SupabaseAdapter(DatabaseAdapter):
             bool: True if upload successful, False otherwise
         """
         if not self.connected or not self.client:
-            error_msg = "Error: Not connected to Supabase"
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error("Not connected to Supabase")
             return False
         
         try:
@@ -216,21 +201,14 @@ class SupabaseAdapter(DatabaseAdapter):
             response = self.client.table(table_name).insert(serialized_data).execute()
             
             if response.data:
-                success_msg = f"Successfully uploaded data to {table_name}"
-                logger.info(success_msg)
-                logger.info(f"Uploaded record: {response.data}")
-                print(success_msg)
+                logger.info(f"Successfully uploaded data to {table_name}")
                 return True
             else:
-                warning_msg = f"Warning: No data returned from Supabase insert"
-                logger.warning(warning_msg)
-                print(warning_msg)
+                logger.warning("No data returned from Supabase insert")
                 return False
                 
         except Exception as e:
-            error_msg = f"Error uploading data to Supabase: {e}"
-            logger.error(error_msg, exc_info=True)
-            print(error_msg)
+            logger.error(f"Error uploading data to Supabase: {e}", exc_info=True)
             return False
 
     def upload_geocheck_data(self, data: Dict[str, Any], path: str = None) -> Optional[str]:
@@ -246,9 +224,7 @@ class SupabaseAdapter(DatabaseAdapter):
             str: The geocheck_id if upload successful, None otherwise
         """
         if not self.connected or not self.client:
-            error_msg = "Error: Not connected to Supabase"
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error("Not connected to Supabase")
             return None
         
         try:
@@ -257,11 +233,6 @@ class SupabaseAdapter(DatabaseAdapter):
             if machine_id:
                 if not self.ensure_machine_exists(machine_id, path):
                     logger.warning(f"Could not ensure machine {machine_id} exists, but continuing with upload attempt")
-            
-            # Generate ID if not provided
-            if 'id' not in data or not data.get('id'):
-                # Generate a UUID-based ID
-                data['id'] = str(uuid.uuid4())
             
             # Remove MLC data if accidentally included (it goes to separate tables)
             data.pop('mlc_leaves_a', None)
@@ -278,20 +249,14 @@ class SupabaseAdapter(DatabaseAdapter):
             
             if response.data and len(response.data) > 0:
                 geocheck_id = response.data[0].get('id')
-                success_msg = f"Successfully uploaded geocheck data with id: {geocheck_id}"
-                logger.info(success_msg)
-                print(success_msg)
+                logger.info(f"Successfully uploaded geocheck data with id: {geocheck_id}")
                 return geocheck_id
             else:
-                warning_msg = "Warning: No data returned from Supabase geocheck insert"
-                logger.warning(warning_msg)
-                print(warning_msg)
+                logger.warning("No data returned from Supabase geocheck insert")
                 return None
                 
         except Exception as e:
-            error_msg = f"Error uploading geocheck data to Supabase: {e}"
-            logger.error(error_msg, exc_info=True)
-            print(error_msg)
+            logger.error(f"Error uploading geocheck data to Supabase: {e}", exc_info=True)
             return None
 
     def upload_mlc_leaves(self, geocheck_id: str, leaves_data: list, bank: str) -> bool:
@@ -307,9 +272,7 @@ class SupabaseAdapter(DatabaseAdapter):
             bool: True if all leaves uploaded successfully, False otherwise
         """
         if not self.connected or not self.client:
-            error_msg = "Error: Not connected to Supabase"
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error("Not connected to Supabase")
             return False
         
         if not geocheck_id or not leaves_data:
@@ -332,20 +295,14 @@ class SupabaseAdapter(DatabaseAdapter):
             response = self.client.table(table_name).insert(upload_data).execute()
             
             if response.data:
-                success_msg = f"Successfully uploaded {len(upload_data)} MLC leaves to {table_name}"
-                logger.info(success_msg)
-                print(success_msg)
+                logger.info(f"Successfully uploaded {len(upload_data)} MLC leaves to {table_name}")
                 return True
             else:
-                warning_msg = f"Warning: No data returned from {table_name} insert"
-                logger.warning(warning_msg)
-                print(warning_msg)
+                logger.warning(f"No data returned from {table_name} insert")
                 return False
                 
         except Exception as e:
-            error_msg = f"Error uploading MLC leaves to {table_name}: {e}"
-            logger.error(error_msg, exc_info=True)
-            print(error_msg)
+            logger.error(f"Error uploading MLC leaves to {table_name}: {e}", exc_info=True)
             return False
 
     def upload_mlc_backlash(self, geocheck_id: str, backlash_data: list, bank: str) -> bool:
@@ -361,9 +318,7 @@ class SupabaseAdapter(DatabaseAdapter):
             bool: True if all backlash data uploaded successfully, False otherwise
         """
         if not self.connected or not self.client:
-            error_msg = "Error: Not connected to Supabase"
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error("Not connected to Supabase")
             return False
         
         if not geocheck_id or not backlash_data:
@@ -386,20 +341,14 @@ class SupabaseAdapter(DatabaseAdapter):
             response = self.client.table(table_name).insert(upload_data).execute()
             
             if response.data:
-                success_msg = f"Successfully uploaded {len(upload_data)} MLC backlash records to {table_name}"
-                logger.info(success_msg)
-                print(success_msg)
+                logger.info(f"Successfully uploaded {len(upload_data)} MLC backlash records to {table_name}")
                 return True
             else:
-                warning_msg = f"Warning: No data returned from {table_name} insert"
-                logger.warning(warning_msg)
-                print(warning_msg)
+                logger.warning(f"No data returned from {table_name} insert")
                 return False
                 
         except Exception as e:
-            error_msg = f"Error uploading MLC backlash to {table_name}: {e}"
-            logger.error(error_msg, exc_info=True)
-            print(error_msg)
+            logger.error(f"Error uploading MLC backlash to {table_name}: {e}", exc_info=True)
             return False
 
     def _serialize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -430,7 +379,6 @@ class SupabaseAdapter(DatabaseAdapter):
         self.client = None
         self.connected = False
         logger.info("Supabase connection closed")
-        print("Supabase connection closed")
 
 
 class Uploader:
@@ -483,9 +431,7 @@ class Uploader:
             - Geo6xfffModel
         """
         if not self.connected:
-            error_msg = "Error: Not connected to database. Call connect() first."
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error("Not connected to database. Call connect() first.")
             return False
 
         model_type = type(model).__name__.lower()
@@ -510,9 +456,7 @@ class Uploader:
             - Geo6xfffModel
         """
         if not self.connected:
-            error_msg = "Error: Not connected to database. Call connect() first."
-            logger.error(error_msg)
-            print(error_msg)
+            logger.error("Not connected to database. Call connect() first.")
             return False
 
         model_type = type(model).__name__.lower()
@@ -549,9 +493,7 @@ class Uploader:
             return self.db_adapter.upload_beam_data(table_name, data, path=eBeam.get_path())
 
         except Exception as e:
-            error_msg = f"Error during E-beam upload: {e}"
-            logger.error(error_msg, exc_info=True)
-            print(error_msg)
+            logger.error(f"Error during E-beam upload: {e}", exc_info=True)
             return False
 
 
@@ -583,9 +525,7 @@ class Uploader:
             return self.db_adapter.upload_beam_data(table_name, data, path=xBeam.get_path())
 
         except Exception as e:
-            error_msg = f"Error during X-beam upload: {e}"
-            logger.error(error_msg, exc_info=True)
-            print(error_msg)
+            logger.error(f"Error during X-beam upload: {e}", exc_info=True)
             return False
 
 
@@ -726,18 +666,14 @@ class Uploader:
                              backlash_a_result and backlash_b_result)
             
             if overall_success:
-                logger.info("Successfully uploaded all geometry check data (beam, geocheck, MLC leaves, and backlash)")
-                print("Successfully uploaded all geometry check data")
+                logger.info("Successfully uploaded all geometry check data")
             else:
                 logger.warning("Some geometry check data uploads may have failed")
-                print("Warning: Some geometry check data uploads may have failed")
             
             return overall_success
 
         except Exception as e:
-            error_msg = f"Error during Geo model upload: {e}"
-            logger.error(error_msg, exc_info=True)
-            print(error_msg)
+            logger.error(f"Error during Geo model upload: {e}", exc_info=True)
             return False
 
     def uploadMLCLeaves(self, geoModel, table_name: str = 'mlc_leaves_data'):
