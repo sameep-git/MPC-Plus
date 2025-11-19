@@ -1,0 +1,145 @@
+using Api.Models;
+using Api.Repositories.Abstractions;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class GeoCheckController : ControllerBase
+{
+    private readonly IGeoCheckRepository _repository;
+    private readonly ILogger<GeoCheckController> _logger;
+
+    public GeoCheckController(IGeoCheckRepository repository, ILogger<GeoCheckController> logger)
+    {
+        _repository = repository;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Get geometry check data filtered by various parameters.
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<GeoCheck>>> GetAll(
+        [FromQuery] string? type = null,
+        [FromQuery(Name = "machine-id")] string? machineId = null,
+        [FromQuery] string? date = null,
+        [FromQuery(Name = "start-date")] string? startDate = null,
+        [FromQuery(Name = "end-date")] string? endDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        DateOnly? dateOnly = null;
+        if (!string.IsNullOrWhiteSpace(date))
+        {
+            if (!DateOnly.TryParse(date, out var parsedDate))
+            {
+                return BadRequest($"Invalid date format: {date}");
+            }
+            dateOnly = parsedDate;
+        }
+
+        DateOnly? startDateOnly = null;
+        if (!string.IsNullOrWhiteSpace(startDate))
+        {
+            if (!DateOnly.TryParse(startDate, out var parsedStartDate))
+            {
+                return BadRequest($"Invalid start-date format: {startDate}");
+            }
+            startDateOnly = parsedStartDate;
+        }
+
+        DateOnly? endDateOnly = null;
+        if (!string.IsNullOrWhiteSpace(endDate))
+        {
+            if (!DateOnly.TryParse(endDate, out var parsedEndDate))
+            {
+                return BadRequest($"Invalid end-date format: {endDate}");
+            }
+            endDateOnly = parsedEndDate;
+        }
+
+        var geoChecks = await _repository.GetAllAsync(
+            machineId: machineId,
+            type: type,
+            date: dateOnly,
+            startDate: startDateOnly,
+            endDate: endDateOnly,
+            cancellationToken: cancellationToken);
+
+        return Ok(geoChecks);
+    }
+
+    /// <summary>
+    /// Get a specific geometry check by ID.
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<GeoCheck>> GetById(string id, CancellationToken cancellationToken)
+    {
+        var geoCheck = await _repository.GetByIdAsync(id, cancellationToken);
+        if (geoCheck is null)
+        {
+            return NotFound($"Geometry check with id '{id}' was not found.");
+        }
+
+        return Ok(geoCheck);
+    }
+
+    /// <summary>
+    /// Create a new geometry check.
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<GeoCheck>> Create([FromBody] GeoCheck geoCheck, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var created = await _repository.CreateAsync(geoCheck, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (InvalidOperationException exception)
+        {
+            _logger.LogWarning(exception, "Conflict creating geometry check");
+            return Conflict(exception.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating geometry check");
+            return StatusCode(500, "An error occurred while creating the geometry check.");
+        }
+    }
+
+    /// <summary>
+    /// Update an existing geometry check.
+    /// </summary>
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(string id, [FromBody] GeoCheck geoCheck, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(id, geoCheck.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest("The geometry check id in the route must match the payload.");
+        }
+
+        var updated = await _repository.UpdateAsync(geoCheck, cancellationToken);
+        if (!updated)
+        {
+            return NotFound($"Geometry check with id '{id}' was not found.");
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete a geometry check.
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
+    {
+        var deleted = await _repository.DeleteAsync(id, cancellationToken);
+        if (!deleted)
+        {
+            return NotFound($"Geometry check with id '{id}' was not found.");
+        }
+
+        return NoContent();
+    }
+}
