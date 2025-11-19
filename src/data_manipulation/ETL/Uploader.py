@@ -458,11 +458,17 @@ class Uploader:
                 if self.db_adapter.upload_beam_data(table_name, backlash_record):
                     success_count += 1
             
+            
             print(f"Uploaded {success_count}/{len(backlash_data)} MLC backlash records")
             return success_count == len(backlash_data)
 
         except Exception as e:
             print(f"Error uploading MLC backlash: {e}")
             return False
+
+    def close(self):
+        """Close the database connection."""
+        if self.db_adapter and hasattr(self.db_adapter, 'close'):
+            self.db_adapter.close()
 
 

@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 from .data_extractor import data_extractor
 from .image_extractor import image_extractor
 from .Uploader import Uploader
@@ -7,6 +9,16 @@ from ..models.EBeamModel import EBeamModel
 from ..models.XBeamModel import XBeamModel
 from ..models.Geo6xfffModel import Geo6xfffModel
 from ..models.ImageModel import ImageModel
+
+# Load environment variables from .env file
+# Look for .env in the data_manipulation directory
+env_path = Path(__file__).parent.parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    # Try project root as fallback
+    project_root = Path(__file__).parent.parent.parent.parent
+    load_dotenv(project_root / '.env')
 
 
 class DataProcessor:
@@ -99,15 +111,15 @@ class DataProcessor:
                     self.data_ex.extract(beam)
                     print("Uploading to SupaBase...")
                     #Set Up DataBase
-                    # Connect to database
+                    # Connect to database using environment variables
                     connection_params = {
-                        'url': 'your-supabase-url',
-                        'key': 'your-supabase-key'
+                        'url': os.getenv('SUPABASE_URL'),
+                        'key': os.getenv('SUPABASE_KEY')
                     }
                     self.up.connect(connection_params)
                     # self.up.upload(beam)
                     print("Uploading Complete")
-                    self.up.close();
+                    self.up.close()
 
                 
 

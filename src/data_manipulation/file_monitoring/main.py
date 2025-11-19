@@ -13,11 +13,14 @@ import argparse
 import logging
 from pathlib import Path
 
-# Add the src directory to the Python path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add the project root to the Python path
+# This file is at: MPC-Plus/src/data_manipulation/file_monitoring/main.py
+# We want to add: MPC-Plus/ to the path
+project_root = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(project_root))
 
-from folder_monitor import FolderMonitor
-from run_monitor_service import MonitorService, install_dependencies
+from src.data_manipulation.file_monitoring.folder_monitor import FolderMonitor
+from src.data_manipulation.file_monitoring.run_monitor_service import MonitorService, install_dependencies
 
 # Configure logging
 logging.basicConfig(
