@@ -615,9 +615,7 @@ class Uploader:
             
             geocheck_id_result = self.db_adapter.upload_geocheck_data(geocheck_data, path=geoModel.get_path())
             if not geocheck_id_result:
-                error_msg = "Failed to upload geocheck data, cannot proceed with MLC data"
-                logger.error(error_msg)
-                print(error_msg)
+                logger.error("Failed to upload geocheck data, cannot proceed with MLC data")
                 return False
             
             # Step 3: Upload MLC leaves data to separate tables
@@ -713,11 +711,11 @@ class Uploader:
                 if self.db_adapter.upload_beam_data(table_name, leaf_data):
                     success_count += 1
             
-            print(f"Uploaded {success_count}/{len(leaves_data)} MLC leaf records")
+            logger.info(f"Uploaded {success_count}/{len(leaves_data)} MLC leaf records")
             return success_count == len(leaves_data)
 
         except Exception as e:
-            print(f"Error uploading MLC leaves: {e}")
+            logger.error(f"Error uploading MLC leaves: {e}")
             return False
 
     def uploadMLCBacklash(self, geoModel, table_name: str = 'mlc_backlash_data'):
@@ -757,12 +755,11 @@ class Uploader:
                 if self.db_adapter.upload_beam_data(table_name, backlash_record):
                     success_count += 1
             
-            
-            print(f"Uploaded {success_count}/{len(backlash_data)} MLC backlash records")
+            logger.info(f"Uploaded {success_count}/{len(backlash_data)} MLC backlash records")
             return success_count == len(backlash_data)
 
         except Exception as e:
-            print(f"Error uploading MLC backlash: {e}")
+            logger.error(f"Error uploading MLC backlash: {e}")
             return False
 
     def close(self):

@@ -115,16 +115,7 @@ class data_extractor:
         Test method for E model extraction.
         Runs eModelExtraction() and prints all values using getters.
         """
-        print("\n--- Starting E Model Extraction Test ---")
         self.eModelExtraction(eBeam)
-        print("--- Extraction Complete ---\n")
-
-            # Print the values
-        print(f"Date: {eBeam.get_date()}")
-        print(f"Machine SN: {eBeam.get_machine_SN()}")
-        print(f"Is Baseline: {eBeam.get_baseline()}")
-        print(f"Relative Uniformity: {eBeam.get_relative_uniformity()}")
-        print(f"Relative Output: {eBeam.get_relative_output()}")
 
 
     # --- X-BEAM ---
@@ -180,18 +171,8 @@ class data_extractor:
         Test method for X model extraction.
         Runs xModelExtraction() and prints all values using getters.
         """
-        print("\n--- Starting X Model Extraction Test ---")
         self.xModelExtraction(xBeam)
-        print("--- Extraction Complete ---\n")
 
-            # Print the values
-        print(f"Date: {xBeam.get_date()}")
-        print(f"Machine SN: {xBeam.get_machine_SN()}")
-        print(f"Is Baseline: {xBeam.get_baseline()}")
-        print(f"Relative Uniformity: {xBeam.get_relative_uniformity()}")
-        print(f"Relative Output: {xBeam.get_relative_output()}")
-        print(f"Center Shift: {xBeam.get_center_shift()}")
-        
     
     def geoModelExtraction(self, geoModel):
         """
@@ -341,75 +322,5 @@ class data_extractor:
         Test method for Geo model extraction.
         Runs geoModelExtraction() and prints all values using getters.
         """
-        print("\n--- Starting Geo Model Extraction Test ---")
         self.geoModelExtraction(geoModel)
-        print("--- Extraction Complete ---\n")
-
-        try:
-            print(f"Date: {geoModel.get_date()}")
-            print(f"Machine SN: {geoModel.get_machine_SN()}")
-            print(f"Is Baseline: {geoModel.get_baseline()}")
-            # IsoCenterGroup
-            print(f"IsoCenterSize: {geoModel.get_IsoCenterSize()}")
-            print(f"IsoCenterMVOffset: {geoModel.get_IsoCenterMVOffset()}")
-            print(f"IsoCenterKVOffset: {geoModel.get_IsoCenterKVOffset()}")
-
-            # BeamGroup
-            print(f"BeamOutputChange: {geoModel.get_relative_output()}")
-            print(f"BeamUniformityChange: {geoModel.get_relative_uniformity()}")
-            print(f"BeamCenterShift: {geoModel.get_center_shift()}")
-
-            # CollimationGroup
-            print(f"CollimationRotationOffset: {geoModel.get_CollimationRotationOffset()}")
-
-            # GantryGroup
-            print(f"GantryAbsolute: {geoModel.get_GantryAbsolute()}")
-            print(f"GantryRelative: {geoModel.get_GantryRelative()}")
-
-            # EnhancedCouchGroup
-            print(f"CouchMaxPositionError: {geoModel.get_CouchMaxPositionError()}")
-            print(f"CouchLat: {geoModel.get_CouchLat()}")
-            print(f"CouchLng: {geoModel.get_CouchLng()}")
-            print(f"CouchVrt: {geoModel.get_CouchVrt()}")
-            print(f"CouchRtnFine: {geoModel.get_CouchRtnFine()}")
-            print(f"CouchRtnLarge: {geoModel.get_CouchRtnLarge()}")
-            print(f"RotationInducedCouchShiftFullRange: {geoModel.get_RotationInducedCouchShiftFullRange()}")
-
-            # MLC Groups
-            print(f"MaxOffsetA: {geoModel.get_MaxOffsetA()}")
-            print(f"MaxOffsetB: {geoModel.get_MaxOffsetB()}")
-            print(f"MeanOffsetA: {geoModel.get_MeanOffsetA()}")
-            print(f"MeanOffsetB: {geoModel.get_MeanOffsetB()}")
-            print(f"MLCBacklashMaxA: {geoModel.get_MLCBacklashMaxA()}")
-            print(f"MLCBacklashMaxB: {geoModel.get_MLCBacklashMaxB()}")
-            print(f"MLCBacklashMeanA: {geoModel.get_MLCBacklashMeanA()}")
-            print(f"MLCBacklashMeanB: {geoModel.get_MLCBacklashMeanB()}")
-
-            # Individual MLC leaf/backlash arrays (if implemented)
-            # if hasattr(geoModel, "get_MLCLeafA"):
-            #     print(f"MLCLeafA: {geoModel.get_MLCLeafA()}")
-            # if hasattr(geoModel, "get_MLCLeafB"):
-            #     print(f"MLCLeafB: {geoModel.get_MLCLeafB()}")
-            for i in range(11, 51):
-                print(f"MLCLeafA (Index {i}): {geoModel.get_MLCLeafA(i)}")
-            for i in range(11, 51):
-                print(f"MLCLeafB (Index {i}): {geoModel.get_MLCLeafB(i)}")
-
-
-            # Jaw Group
-            print(f"JawX1: {geoModel.get_JawX1()}")
-            print(f"JawX2: {geoModel.get_JawX2()}")
-            print(f"JawY1: {geoModel.get_JawY1()}")
-            print(f"JawY2: {geoModel.get_JawY2()}")
-
-            # Jaw Parallelism
-            print(f"JawParallelismX1: {geoModel.get_JawParallelismX1()}")
-            print(f"JawParallelismX2: {geoModel.get_JawParallelismX2()}")
-            print(f"JawParallelismY1: {geoModel.get_JawParallelismY1()}")
-            print(f"JawParallelismY2: {geoModel.get_JawParallelismY2()}")
-
-        except Exception as e:
-            print(f"Error printing Geo model data: {e}")
-
-        print("\n--- End of Geo Model Test ---\n")
 
