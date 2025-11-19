@@ -26,9 +26,9 @@ class DataProcessor:
         self.data_ex = data_extractor()
         self.image_ex = image_extractor()
         
-        #Database Uploader
+        # Database Uploader
         self.up = Uploader()
-        #If ran as test, coded so that no database connection is made
+        # If ran as test, coded so that no database connection is made
 
     # -------------------------------------------------------------------------
     # Generic helper method for beams
@@ -45,6 +45,7 @@ class DataProcessor:
         model.set_machine_SN(model._getSNFromPathName(self.data_path))
         model.set_baseline(model._getIsBaselineFromPathName(self.data_path))
         return model
+    
     # -------------------------------------------------------------------------
     # Generic helper method for images
     # -------------------------------------------------------------------------
@@ -61,7 +62,7 @@ class DataProcessor:
         image.set_date(image._getDateFromPathName(self.image_path))
         image.set_machine_SN(image._getSNFromPathName(self.image_path))
         self.image_ex.get_image(image)
-        #return image  # optional if you want to keep a reference to the image object
+        # return image  # optional if you want to keep a reference to the image object
 
 
     # -------------------------------------------------------------------------
@@ -98,7 +99,7 @@ class DataProcessor:
                     print("Running normal extraction...")
                     self.data_ex.extract(beam)
                     print("Uploading to SupaBase...")
-                    #Set Up DataBase
+                    # Set Up DataBase
                     # Connect to database
                     connection_params = {
                         'url': 'your-supabase-url',
@@ -107,7 +108,7 @@ class DataProcessor:
                     self.up.connect(connection_params)
                     # self.up.upload(beam)
                     print("Uploading Complete")
-                    self.up.close();
+                    self.up.close()
 
                 
 

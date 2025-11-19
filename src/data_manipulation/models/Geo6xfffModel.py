@@ -191,6 +191,7 @@ class Geo6xfffModel(AbstractBeamModel):
 
     def get_center_shift(self):
         return self._center_shift
+    
     # Setters
     def set_relative_uniformity(self, relative_uniformity):
         self._relative_uniformity = relative_uniformity
@@ -200,6 +201,3 @@ class Geo6xfffModel(AbstractBeamModel):
 
     def set_center_shift(self, center_shift):
         self._center_shift = center_shift
-
-
-    

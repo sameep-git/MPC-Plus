@@ -12,6 +12,10 @@ import sys
 import argparse
 import logging
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -45,13 +49,27 @@ def start_monitor(idrive_path="iDrive", background=False):
     try:
         print(f"Starting folder monitor for: {os.path.abspath(idrive_path)}")
         
+        # Load Supabase credentials from environment
+        supabase_url = os.getenv('SUPABASE_URL')
+        supabase_key = os.getenv('SUPABASE_KEY')
+        
+        if supabase_url and supabase_key:
+            print("✓ Supabase credentials loaded - uploads enabled")
+        else:
+            print("⚠ No Supabase credentials - uploads disabled")
+            print("  Set SUPABASE_URL and SUPABASE_KEY in .env to enable uploads")
+        
         if background:
             # Use the service runner for background mode
             service = MonitorService()
             service.start_background()
         else:
             # Direct monitoring mode
-            monitor = FolderMonitor(idrive_path)
+            monitor = FolderMonitor(
+                idrive_path,
+                supabase_url=supabase_url,
+                supabase_key=supabase_key
+            )
             monitor.scan_existing_folders()
             monitor.start_monitoring()
             
