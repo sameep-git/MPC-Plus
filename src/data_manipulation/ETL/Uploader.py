@@ -22,6 +22,8 @@ from decimal import Decimal
 from typing import Dict, Any, Optional
 import logging
 import os
+import json
+import uuid
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
@@ -231,6 +233,175 @@ class SupabaseAdapter(DatabaseAdapter):
             print(error_msg)
             return False
 
+    def upload_geocheck_data(self, data: Dict[str, Any], path: str = None) -> Optional[str]:
+        """
+        Upload geometry check data to geochecks table.
+        Note: MLC leaves and backlash should NOT be included here - they go to separate tables.
+        
+        Args:
+            data: Dictionary containing the geocheck data to upload (geometry data only: jaws, couch, gantry, etc.)
+            path: Optional path to extract location from for machine creation
+        
+        Returns:
+            str: The geocheck_id if upload successful, None otherwise
+        """
+        if not self.connected or not self.client:
+            error_msg = "Error: Not connected to Supabase"
+            logger.error(error_msg)
+            print(error_msg)
+            return None
+        
+        try:
+            # Ensure machine exists before uploading geocheck
+            machine_id = data.get('machine_id')
+            if machine_id:
+                if not self.ensure_machine_exists(machine_id, path):
+                    logger.warning(f"Could not ensure machine {machine_id} exists, but continuing with upload attempt")
+            
+            # Generate ID if not provided
+            if 'id' not in data or not data.get('id'):
+                # Generate a UUID-based ID
+                data['id'] = str(uuid.uuid4())
+            
+            # Remove MLC data if accidentally included (it goes to separate tables)
+            data.pop('mlc_leaves_a', None)
+            data.pop('mlc_leaves_b', None)
+            data.pop('mlc_backlash_a', None)
+            data.pop('mlc_backlash_b', None)
+            
+            # Convert Decimal to float for JSON serialization
+            serialized_data = self._serialize_data(data)
+            logger.debug(f"Uploading geocheck data: {serialized_data}")
+            
+            # Insert data into geochecks table
+            response = self.client.table('geochecks').insert(serialized_data).execute()
+            
+            if response.data and len(response.data) > 0:
+                geocheck_id = response.data[0].get('id')
+                success_msg = f"Successfully uploaded geocheck data with id: {geocheck_id}"
+                logger.info(success_msg)
+                print(success_msg)
+                return geocheck_id
+            else:
+                warning_msg = "Warning: No data returned from Supabase geocheck insert"
+                logger.warning(warning_msg)
+                print(warning_msg)
+                return None
+                
+        except Exception as e:
+            error_msg = f"Error uploading geocheck data to Supabase: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
+            return None
+
+    def upload_mlc_leaves(self, geocheck_id: str, leaves_data: list, bank: str) -> bool:
+        """
+        Upload MLC leaves data to geocheck_mlc_leaves_a or geocheck_mlc_leaves_b table.
+        
+        Args:
+            geocheck_id: The geocheck ID to associate leaves with
+            leaves_data: List of dictionaries with 'leaf_number' and 'leaf_value'
+            bank: Either 'a' or 'b' to determine which table to use
+        
+        Returns:
+            bool: True if all leaves uploaded successfully, False otherwise
+        """
+        if not self.connected or not self.client:
+            error_msg = "Error: Not connected to Supabase"
+            logger.error(error_msg)
+            print(error_msg)
+            return False
+        
+        if not geocheck_id or not leaves_data:
+            return False
+        
+        table_name = f'geocheck_mlc_leaves_{bank.lower()}'
+        
+        try:
+            # Prepare data with geocheck_id
+            upload_data = []
+            for leaf in leaves_data:
+                leaf_record = {
+                    'geocheck_id': geocheck_id,
+                    'leaf_number': leaf.get('leaf_number'),
+                    'leaf_value': float(leaf.get('leaf_value')) if leaf.get('leaf_value') is not None else None
+                }
+                upload_data.append(leaf_record)
+            
+            # Insert all leaves at once
+            response = self.client.table(table_name).insert(upload_data).execute()
+            
+            if response.data:
+                success_msg = f"Successfully uploaded {len(upload_data)} MLC leaves to {table_name}"
+                logger.info(success_msg)
+                print(success_msg)
+                return True
+            else:
+                warning_msg = f"Warning: No data returned from {table_name} insert"
+                logger.warning(warning_msg)
+                print(warning_msg)
+                return False
+                
+        except Exception as e:
+            error_msg = f"Error uploading MLC leaves to {table_name}: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
+            return False
+
+    def upload_mlc_backlash(self, geocheck_id: str, backlash_data: list, bank: str) -> bool:
+        """
+        Upload MLC backlash data to geocheck_mlc_backlash_a or geocheck_mlc_backlash_b table.
+        
+        Args:
+            geocheck_id: The geocheck ID to associate backlash with
+            backlash_data: List of dictionaries with 'leaf_number' and 'backlash_value'
+            bank: Either 'a' or 'b' to determine which table to use
+        
+        Returns:
+            bool: True if all backlash data uploaded successfully, False otherwise
+        """
+        if not self.connected or not self.client:
+            error_msg = "Error: Not connected to Supabase"
+            logger.error(error_msg)
+            print(error_msg)
+            return False
+        
+        if not geocheck_id or not backlash_data:
+            return False
+        
+        table_name = f'geocheck_mlc_backlash_{bank.lower()}'
+        
+        try:
+            # Prepare data with geocheck_id
+            upload_data = []
+            for backlash in backlash_data:
+                backlash_record = {
+                    'geocheck_id': geocheck_id,
+                    'leaf_number': backlash.get('leaf_number'),
+                    'backlash_value': float(backlash.get('backlash_value')) if backlash.get('backlash_value') is not None else None
+                }
+                upload_data.append(backlash_record)
+            
+            # Insert all backlash records at once
+            response = self.client.table(table_name).insert(upload_data).execute()
+            
+            if response.data:
+                success_msg = f"Successfully uploaded {len(upload_data)} MLC backlash records to {table_name}"
+                logger.info(success_msg)
+                print(success_msg)
+                return True
+            else:
+                warning_msg = f"Warning: No data returned from {table_name} insert"
+                logger.warning(warning_msg)
+                print(warning_msg)
+                return False
+                
+        except Exception as e:
+            error_msg = f"Error uploading MLC backlash to {table_name}: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
+            return False
+
     def _serialize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Convert data types to JSON-serializable formats.
@@ -422,19 +593,22 @@ class Uploader:
     def geoModelUpload(self, geoModel):
         """
         Upload data for Geo6xfffModel to database.
-        Note: The 'beams' table only stores basic beam data. 
-        Additional geometry data could be stored in a separate table if needed.
+        The 6x beam data (relative_output, relative_uniformity, center_shift) goes to 'beams' table as an X-beam.
+        Geometry-specific data (jaws, couch, gantry, etc.) goes to 'geochecks' table.
+        MLC leaves and backlash go to separate tables: geocheck_mlc_leaves_a/b and geocheck_mlc_backlash_a/b.
         """
         try:
-            # Prepare data dictionary mapped to 'beams' table schema
-            # Note: The beams table doesn't have all geometry fields, so we store basic beam info
-            # Get values, handling Decimal('0.0') which is falsy but valid
+            # Step 1: Extract and upload 6x beam data to 'beams' table (as an X-beam)
+            # Both "6x" and "6xfff" should be treated as X-beams
+            beam_type = geoModel.get_type()
             rel_output = geoModel.get_relative_output()
             rel_uniformity = geoModel.get_relative_uniformity()
             center_shift = geoModel.get_center_shift()
             
-            data = {
-                'type': geoModel.get_type(),
+            # Ensure 6x and 6xFFF are treated as X-beams
+            # Normalize the type - if it's "6xfff" or similar, keep it as is for the beams table
+            beam_data = {
+                'type': beam_type,  # "6x" or "6xfff" - both are X-beams
                 'date': geoModel.get_date().date() if hasattr(geoModel.get_date(), 'date') else geoModel.get_date(),
                 'path': geoModel.get_path(),
                 'relOutput': float(rel_output) if rel_output is not None else None,
@@ -444,15 +618,121 @@ class Uploader:
                 'note': f"Baseline: {geoModel.get_baseline()}, Geometry check data available" if geoModel.get_baseline() else "Geometry check data available",
             }
 
-            # Upload to database, passing path for machine creation
-            table_name = 'beams'
-            result = self.db_adapter.upload_beam_data(table_name, data, path=geoModel.get_path())
+            # Upload 6x beam to beams table
+            beam_result = self.db_adapter.upload_beam_data('beams', beam_data, path=geoModel.get_path())
+            if not beam_result:
+                logger.warning("Failed to upload 6x beam data, but continuing with geometry data upload")
             
-            # Optionally upload MLC leaf data to separate tables
-            # This could be done in a separate method or as part of this method
-            # For now, we'll skip individual leaf data to keep the main record simple
+            # Step 2: Upload geometry data to 'geochecks' table (without MLC leaves/backlash)
+            # ID will be auto-generated by upload_geocheck_data if not provided
+            geocheck_data = {
+                'type': beam_type,  # "6x" or "6xfff"
+                'path': geoModel.get_path(),
+                'machine_id': geoModel.get_machine_SN(),
+                'date': geoModel.get_date().date() if hasattr(geoModel.get_date(), 'date') else geoModel.get_date(),
+                # IsoCenterGroup
+                'iso_center_size': float(geoModel.get_IsoCenterSize()) if geoModel.get_IsoCenterSize() is not None else None,
+                'iso_center_mv_offset': float(geoModel.get_IsoCenterMVOffset()) if geoModel.get_IsoCenterMVOffset() is not None else None,
+                'iso_center_kv_offset': float(geoModel.get_IsoCenterKVOffset()) if geoModel.get_IsoCenterKVOffset() is not None else None,
+                # BeamGroup (already in beams table, but also in geochecks for reference)
+                'relative_output': float(rel_output) if rel_output is not None else None,
+                'relative_uniformity': float(rel_uniformity) if rel_uniformity is not None else None,
+                'center_shift': float(center_shift) if center_shift is not None else None,
+                # CollimationGroup
+                'collimation_rotation_offset': float(geoModel.get_CollimationRotationOffset()) if geoModel.get_CollimationRotationOffset() is not None else None,
+                # GantryGroup
+                'gantry_absolute': float(geoModel.get_GantryAbsolute()) if geoModel.get_GantryAbsolute() is not None else None,
+                'gantry_relative': float(geoModel.get_GantryRelative()) if geoModel.get_GantryRelative() is not None else None,
+                # EnhancedCouchGroup
+                'couch_max_position_error': float(geoModel.get_CouchMaxPositionError()) if geoModel.get_CouchMaxPositionError() is not None else None,
+                'couch_lat': float(geoModel.get_CouchLat()) if geoModel.get_CouchLat() is not None else None,
+                'couch_lng': float(geoModel.get_CouchLng()) if geoModel.get_CouchLng() is not None else None,
+                'couch_vrt': float(geoModel.get_CouchVrt()) if geoModel.get_CouchVrt() is not None else None,
+                'couch_rtn_fine': float(geoModel.get_CouchRtnFine()) if geoModel.get_CouchRtnFine() is not None else None,
+                'couch_rtn_large': float(geoModel.get_CouchRtnLarge()) if geoModel.get_CouchRtnLarge() is not None else None,
+                'rotation_induced_couch_shift_full_range': float(geoModel.get_RotationInducedCouchShiftFullRange()) if geoModel.get_RotationInducedCouchShiftFullRange() is not None else None,
+                # MLCGroup - Offsets (summary stats only, not individual leaves)
+                'max_offset_a': float(geoModel.get_MaxOffsetA()) if geoModel.get_MaxOffsetA() is not None else None,
+                'max_offset_b': float(geoModel.get_MaxOffsetB()) if geoModel.get_MaxOffsetB() is not None else None,
+                'mean_offset_a': float(geoModel.get_MeanOffsetA()) if geoModel.get_MeanOffsetA() is not None else None,
+                'mean_offset_b': float(geoModel.get_MeanOffsetB()) if geoModel.get_MeanOffsetB() is not None else None,
+                # MLCBacklashGroup - Summary stats only (not individual leaves)
+                'mlc_backlash_max_a': float(geoModel.get_MLCBacklashMaxA()) if geoModel.get_MLCBacklashMaxA() is not None else None,
+                'mlc_backlash_max_b': float(geoModel.get_MLCBacklashMaxB()) if geoModel.get_MLCBacklashMaxB() is not None else None,
+                'mlc_backlash_mean_a': float(geoModel.get_MLCBacklashMeanA()) if geoModel.get_MLCBacklashMeanA() is not None else None,
+                'mlc_backlash_mean_b': float(geoModel.get_MLCBacklashMeanB()) if geoModel.get_MLCBacklashMeanB() is not None else None,
+                # JawsGroup
+                'jaw_x1': float(geoModel.get_JawX1()) if geoModel.get_JawX1() is not None else None,
+                'jaw_x2': float(geoModel.get_JawX2()) if geoModel.get_JawX2() is not None else None,
+                'jaw_y1': float(geoModel.get_JawY1()) if geoModel.get_JawY1() is not None else None,
+                'jaw_y2': float(geoModel.get_JawY2()) if geoModel.get_JawY2() is not None else None,
+                # JawsParallelismGroup
+                'jaw_parallelism_x1': float(geoModel.get_JawParallelismX1()) if geoModel.get_JawParallelismX1() is not None else None,
+                'jaw_parallelism_x2': float(geoModel.get_JawParallelismX2()) if geoModel.get_JawParallelismX2() is not None else None,
+                'jaw_parallelism_y1': float(geoModel.get_JawParallelismY1()) if geoModel.get_JawParallelismY1() is not None else None,
+                'jaw_parallelism_y2': float(geoModel.get_JawParallelismY2()) if geoModel.get_JawParallelismY2() is not None else None,
+            }
             
-            return result
+            geocheck_id_result = self.db_adapter.upload_geocheck_data(geocheck_data, path=geoModel.get_path())
+            if not geocheck_id_result:
+                error_msg = "Failed to upload geocheck data, cannot proceed with MLC data"
+                logger.error(error_msg)
+                print(error_msg)
+                return False
+            
+            # Step 3: Upload MLC leaves data to separate tables
+            leaves_a_data = []
+            leaves_b_data = []
+            for i in range(11, 51):
+                leaf_a_val = geoModel.get_MLCLeafA(i)
+                leaf_b_val = geoModel.get_MLCLeafB(i)
+                
+                leaves_a_data.append({
+                    'leaf_number': i,
+                    'leaf_value': float(leaf_a_val) if leaf_a_val is not None else None
+                })
+                leaves_b_data.append({
+                    'leaf_number': i,
+                    'leaf_value': float(leaf_b_val) if leaf_b_val is not None else None
+                })
+            
+            leaves_a_result = self.db_adapter.upload_mlc_leaves(geocheck_id_result, leaves_a_data, 'a')
+            leaves_b_result = self.db_adapter.upload_mlc_leaves(geocheck_id_result, leaves_b_data, 'b')
+            
+            # Step 4: Upload MLC backlash data to separate tables
+            backlash_a_data = []
+            backlash_b_data = []
+            for i in range(11, 51):
+                backlash_a_val = geoModel.get_MLCBacklashA(i)
+                backlash_b_val = geoModel.get_MLCBacklashB(i)
+                
+                backlash_a_data.append({
+                    'leaf_number': i,
+                    'backlash_value': float(backlash_a_val) if backlash_a_val is not None else None
+                })
+                backlash_b_data.append({
+                    'leaf_number': i,
+                    'backlash_value': float(backlash_b_val) if backlash_b_val is not None else None
+                })
+            
+            backlash_a_result = self.db_adapter.upload_mlc_backlash(geocheck_id_result, backlash_a_data, 'a')
+            backlash_b_result = self.db_adapter.upload_mlc_backlash(geocheck_id_result, backlash_b_data, 'b')
+            
+            # Return True if all critical uploads succeeded
+            # Beam upload is optional (we log warning but continue)
+            # Geocheck, leaves, and backlash are all required
+            overall_success = (geocheck_id_result is not None and 
+                             leaves_a_result and leaves_b_result and 
+                             backlash_a_result and backlash_b_result)
+            
+            if overall_success:
+                logger.info("Successfully uploaded all geometry check data (beam, geocheck, MLC leaves, and backlash)")
+                print("Successfully uploaded all geometry check data")
+            else:
+                logger.warning("Some geometry check data uploads may have failed")
+                print("Warning: Some geometry check data uploads may have failed")
+            
+            return overall_success
 
         except Exception as e:
             error_msg = f"Error during Geo model upload: {e}"
