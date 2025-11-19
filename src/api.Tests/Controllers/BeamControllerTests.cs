@@ -8,12 +8,12 @@ namespace Api.Tests.Controllers;
 public class BeamControllerTests
 {
     private readonly Mock<IBeamRepository> _mockRepository;
-    private readonly BeamController _controller;
+    private readonly BeamsController _controller;
 
     public BeamControllerTests()
     {
         _mockRepository = new Mock<IBeamRepository>();
-        _controller = new BeamController(_mockRepository.Object);
+    _controller = new BeamsController(_mockRepository.Object);
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public class BeamControllerTests
 
         // Assert
         var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
-        createdResult.ActionName.Should().Be(nameof(BeamController.GetById));
+    createdResult.ActionName.Should().Be(nameof(BeamsController.GetById));
         createdResult.RouteValues!["id"].Should().Be("beam-new");
     }
 
