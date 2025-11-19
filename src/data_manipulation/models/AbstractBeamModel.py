@@ -64,17 +64,20 @@ class AbstractBeamModel(ABC):
 
     def _getSNFromPathName(self, path: str) -> str:
         """
-        Extracts a serial number from the given path.
+        Extracts a machine ID (serial number) from the given path.
         Example:
             '...NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch'
-            → '6543'
+            → 'SN6543'
+            '/Users/alexandrem/Desktop/MPC Data/Arlington/NDS-WKS-SN5512-2025-09-17-07-08-59-0002-BeamCheckTemplate10x'
+            → 'SN5512'
         Raises:
             ValueError: if no valid serial number pattern is found in the path.
         """
-        match = re.search(r'SN(\d{4})', path)
+        match = re.search(r'SN(\d+)', path)
         if not match:
-            raise ValueError(f"Could not extract serial number from path: {path}")
-        return match.group(1)
+            raise ValueError(f"Could not extract machine ID from path: {path}")
+        # Return the full match including "SN" prefix
+        return match.group(0)
     
     def _getIsBaselineFromPathName(self, pathName: str) -> bool:
         """

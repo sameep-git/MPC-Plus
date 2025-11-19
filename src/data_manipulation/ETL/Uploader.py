@@ -17,9 +17,14 @@ Supported beam models:
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from typing import Dict, Any, Optional
+import logging
+import os
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 
 class DatabaseAdapter(ABC):
@@ -43,13 +48,14 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def upload_beam_data(self, table_name: str, data: Dict[str, Any]) -> bool:
+    def upload_beam_data(self, table_name: str, data: Dict[str, Any], path: str = None) -> bool:
         """
         Upload beam data to the specified table.
         
         Args:
             table_name: Name of the database table
             data: Dictionary containing the data to upload
+            path: Optional path to extract location from for machine creation
         
         Returns:
             bool: True if upload successful, False otherwise
@@ -89,53 +95,140 @@ class SupabaseAdapter(DatabaseAdapter):
             key = connection_params.get('key')
             
             if not url or not key:
-                print("Error: Supabase connection requires 'url' and 'key' parameters")
+                error_msg = "Error: Supabase connection requires 'url' and 'key' parameters"
+                logger.error(error_msg)
+                print(error_msg)
                 return False
             
             self.client: Client = create_client(url, key)
             self.connected = True
+            logger.info("Successfully connected to Supabase")
             print("Successfully connected to Supabase")
             return True
             
         except ImportError:
-            print("Error: supabase-py library not installed. Install with: pip install supabase")
+            error_msg = "Error: supabase-py library not installed. Install with: pip install supabase"
+            logger.error(error_msg)
+            print(error_msg)
             return False
         except Exception as e:
-            print(f"Error connecting to Supabase: {e}")
+            error_msg = f"Error connecting to Supabase: {e}"
+            logger.error(error_msg)
+            print(error_msg)
             self.connected = False
             return False
 
-    def upload_beam_data(self, table_name: str, data: Dict[str, Any]) -> bool:
+    def ensure_machine_exists(self, machine_id: str, path: str = None) -> bool:
+        """
+        Ensure a machine exists in the machines table before uploading beams.
+        Creates the machine if it doesn't exist.
+        
+        Args:
+            machine_id: The machine ID (serial number)
+            path: Optional path to extract location from (e.g., "/Volumes/Lexar/MPC Data/Arlington/...")
+        
+        Returns:
+            bool: True if machine exists or was created successfully, False otherwise
+        """
+        if not self.connected or not self.client:
+            error_msg = "Error: Not connected to Supabase"
+            logger.error(error_msg)
+            print(error_msg)
+            return False
+        
+        try:
+            # Check if machine exists
+            response = self.client.table('machines').select('id').eq('id', machine_id).execute()
+            
+            if response.data and len(response.data) > 0:
+                logger.debug(f"Machine {machine_id} already exists")
+                return True
+            
+            # Machine doesn't exist, create it
+            logger.info(f"Machine {machine_id} not found, creating it...")
+            
+            # Extract location from path if provided
+            location = "Unknown"
+            if path:
+                # Try to extract location from path (e.g., "/Volumes/Lexar/MPC Data/Arlington/..." -> "Arlington")
+                path_parts = path.split(os.sep)
+                for part in path_parts:
+                    if part in ["Arlington", "Weatherford"]:
+                        location = part
+                        break
+            
+            # Create machine with default values
+            machine_data = {
+                'id': machine_id,
+                'name': f"Machine {machine_id}",
+                'location': location,
+                'type': 'NDS-WKS'  # Default type based on folder naming pattern
+            }
+            
+            response = self.client.table('machines').insert(machine_data).execute()
+            
+            if response.data:
+                logger.info(f"Successfully created machine {machine_id} in location {location}")
+                print(f"Created machine {machine_id} in {location}")
+                return True
+            else:
+                logger.warning(f"Warning: No data returned when creating machine {machine_id}")
+                return False
+                
+        except Exception as e:
+            error_msg = f"Error ensuring machine exists: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
+            return False
+
+    def upload_beam_data(self, table_name: str, data: Dict[str, Any], path: str = None) -> bool:
         """
         Upload beam data to Supabase table.
         
         Args:
             table_name: Name of the Supabase table
             data: Dictionary containing the data to upload
+            path: Optional path to extract location from for machine creation
         
         Returns:
             bool: True if upload successful, False otherwise
         """
         if not self.connected or not self.client:
-            print("Error: Not connected to Supabase")
+            error_msg = "Error: Not connected to Supabase"
+            logger.error(error_msg)
+            print(error_msg)
             return False
         
         try:
+            # Ensure machine exists before uploading beam
+            machine_id = data.get('machineId')
+            if machine_id:
+                if not self.ensure_machine_exists(machine_id, path):
+                    logger.warning(f"Could not ensure machine {machine_id} exists, but continuing with upload attempt")
+            
             # Convert Decimal to float for JSON serialization
             serialized_data = self._serialize_data(data)
+            logger.debug(f"Uploading data to {table_name}: {serialized_data}")
             
             # Insert data into Supabase table
             response = self.client.table(table_name).insert(serialized_data).execute()
             
             if response.data:
-                print(f"Successfully uploaded data to {table_name}")
+                success_msg = f"Successfully uploaded data to {table_name}"
+                logger.info(success_msg)
+                logger.info(f"Uploaded record: {response.data}")
+                print(success_msg)
                 return True
             else:
-                print(f"Warning: No data returned from Supabase insert")
+                warning_msg = f"Warning: No data returned from Supabase insert"
+                logger.warning(warning_msg)
+                print(warning_msg)
                 return False
                 
         except Exception as e:
-            print(f"Error uploading data to Supabase: {e}")
+            error_msg = f"Error uploading data to Supabase: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
             return False
 
     def _serialize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -152,7 +245,8 @@ class SupabaseAdapter(DatabaseAdapter):
         for key, value in data.items():
             if isinstance(value, Decimal):
                 serialized[key] = float(value)
-            elif isinstance(value, datetime):
+            elif isinstance(value, (datetime, date)):
+                # Convert both datetime and date objects to ISO format strings
                 serialized[key] = value.isoformat()
             elif value is None:
                 serialized[key] = None
@@ -164,6 +258,7 @@ class SupabaseAdapter(DatabaseAdapter):
         """Close the Supabase connection."""
         self.client = None
         self.connected = False
+        logger.info("Supabase connection closed")
         print("Supabase connection closed")
 
 
@@ -198,6 +293,14 @@ class Uploader:
         self.connected = self.db_adapter.connect(connection_params)
         return self.connected
 
+    def close(self):
+        """
+        Close the database connection using the adapter.
+        """
+        if self.db_adapter:
+            self.db_adapter.close()
+        self.connected = False
+
     def upload(self, model):
         """
         Automatically calls the correct upload method
@@ -209,7 +312,9 @@ class Uploader:
             - Geo6xfffModel
         """
         if not self.connected:
-            print("Error: Not connected to database. Call connect() first.")
+            error_msg = "Error: Not connected to database. Call connect() first."
+            logger.error(error_msg)
+            print(error_msg)
             return False
 
         model_type = type(model).__name__.lower()
@@ -234,7 +339,9 @@ class Uploader:
             - Geo6xfffModel
         """
         if not self.connected:
-            print("Error: Not connected to database. Call connect() first.")
+            error_msg = "Error: Not connected to database. Call connect() first."
+            logger.error(error_msg)
+            print(error_msg)
             return False
 
         model_type = type(model).__name__.lower()
@@ -254,22 +361,26 @@ class Uploader:
         Upload data for E-beam model to database.
         """
         try:
-            # Prepare data dictionary using model getters
+            # Prepare data dictionary mapped to 'beams' table schema
             data = {
-                'date': eBeam.get_date(),
-                'machine_sn': eBeam.get_machine_SN(),
-                'beam_type': eBeam.get_type(),
-                'is_baseline': eBeam.get_baseline(),
-                'relative_output': eBeam.get_relative_output(),
-                'relative_uniformity': eBeam.get_relative_uniformity(),
+                'type': eBeam.get_type(),
+                'date': eBeam.get_date().date() if hasattr(eBeam.get_date(), 'date') else eBeam.get_date(),
+                'path': eBeam.get_path(),
+                'relOutput': float(eBeam.get_relative_output()) if eBeam.get_relative_output() else None,
+                'relUniformity': float(eBeam.get_relative_uniformity()) if eBeam.get_relative_uniformity() else None,
+                'centerShift': None,  # E-beams don't have center shift
+                'machineId': eBeam.get_machine_SN(),
+                'note': f"Baseline: {eBeam.get_baseline()}" if eBeam.get_baseline() else None,
             }
 
-            # Upload to database
-            table_name = 'ebeam_data'  # Adjust table name as needed
-            return self.db_adapter.upload_beam_data(table_name, data)
+            # Upload to database, passing path for machine creation
+            table_name = 'beams'
+            return self.db_adapter.upload_beam_data(table_name, data, path=eBeam.get_path())
 
         except Exception as e:
-            print(f"Error during E-beam upload: {e}")
+            error_msg = f"Error during E-beam upload: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
             return False
 
 
@@ -279,23 +390,31 @@ class Uploader:
         Upload data for X-beam model to database.
         """
         try:
-            # Prepare data dictionary using model getters
+            # Prepare data dictionary mapped to 'beams' table schema
+            # Get values, handling Decimal('0.0') which is falsy but valid
+            rel_output = xBeam.get_relative_output()
+            rel_uniformity = xBeam.get_relative_uniformity()
+            center_shift = xBeam.get_center_shift()
+            
             data = {
-                'date': xBeam.get_date(),
-                'machine_sn': xBeam.get_machine_SN(),
-                'beam_type': xBeam.get_type(),
-                'is_baseline': xBeam.get_baseline(),
-                'relative_output': xBeam.get_relative_output(),
-                'relative_uniformity': xBeam.get_relative_uniformity(),
-                'center_shift': xBeam.get_center_shift(),
+                'type': xBeam.get_type(),
+                'date': xBeam.get_date().date() if hasattr(xBeam.get_date(), 'date') else xBeam.get_date(),
+                'path': xBeam.get_path(),
+                'relOutput': float(rel_output) if rel_output is not None else None,
+                'relUniformity': float(rel_uniformity) if rel_uniformity is not None else None,
+                'centerShift': float(center_shift) if center_shift is not None else None,
+                'machineId': xBeam.get_machine_SN(),
+                'note': f"Baseline: {xBeam.get_baseline()}" if xBeam.get_baseline() else None,
             }
 
-            # Upload to database
-            table_name = 'xbeam_data'  # Adjust table name as needed
-            return self.db_adapter.upload_beam_data(table_name, data)
+            # Upload to database, passing path for machine creation
+            table_name = 'beams'
+            return self.db_adapter.upload_beam_data(table_name, data, path=xBeam.get_path())
 
         except Exception as e:
-            print(f"Error during X-beam upload: {e}")
+            error_msg = f"Error during X-beam upload: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
             return False
 
 
@@ -303,69 +422,31 @@ class Uploader:
     def geoModelUpload(self, geoModel):
         """
         Upload data for Geo6xfffModel to database.
+        Note: The 'beams' table only stores basic beam data. 
+        Additional geometry data could be stored in a separate table if needed.
         """
         try:
-            # Prepare data dictionary using model getters
+            # Prepare data dictionary mapped to 'beams' table schema
+            # Note: The beams table doesn't have all geometry fields, so we store basic beam info
+            # Get values, handling Decimal('0.0') which is falsy but valid
+            rel_output = geoModel.get_relative_output()
+            rel_uniformity = geoModel.get_relative_uniformity()
+            center_shift = geoModel.get_center_shift()
+            
             data = {
-                'date': geoModel.get_date(),
-                'machine_sn': geoModel.get_machine_SN(),
-                'beam_type': geoModel.get_type(),
-                'is_baseline': geoModel.get_baseline(),
-                
-                # IsoCenterGroup
-                'iso_center_size': geoModel.get_IsoCenterSize(),
-                'iso_center_mv_offset': geoModel.get_IsoCenterMVOffset(),
-                'iso_center_kv_offset': geoModel.get_IsoCenterKVOffset(),
-                
-                # BeamGroup
-                'relative_output': geoModel.get_relative_output(),
-                'relative_uniformity': geoModel.get_relative_uniformity(),
-                'center_shift': geoModel.get_center_shift(),
-                
-                # CollimationGroup
-                'collimation_rotation_offset': geoModel.get_CollimationRotationOffset(),
-                
-                # GantryGroup
-                'gantry_absolute': geoModel.get_GantryAbsolute(),
-                'gantry_relative': geoModel.get_GantryRelative(),
-                
-                # EnhancedCouchGroup
-                'couch_max_position_error': geoModel.get_CouchMaxPositionError(),
-                'couch_lat': geoModel.get_CouchLat(),
-                'couch_lng': geoModel.get_CouchLng(),
-                'couch_vrt': geoModel.get_CouchVrt(),
-                'couch_rtn_fine': geoModel.get_CouchRtnFine(),
-                'couch_rtn_large': geoModel.get_CouchRtnLarge(),
-                'rotation_induced_couch_shift_full_range': geoModel.get_RotationInducedCouchShiftFullRange(),
-                
-                # MLC Offsets
-                'max_offset_a': geoModel.get_MaxOffsetA(),
-                'max_offset_b': geoModel.get_MaxOffsetB(),
-                'mean_offset_a': geoModel.get_MeanOffsetA(),
-                'mean_offset_b': geoModel.get_MeanOffsetB(),
-                
-                # MLC Backlash
-                'mlc_backlash_max_a': geoModel.get_MLCBacklashMaxA(),
-                'mlc_backlash_max_b': geoModel.get_MLCBacklashMaxB(),
-                'mlc_backlash_mean_a': geoModel.get_MLCBacklashMeanA(),
-                'mlc_backlash_mean_b': geoModel.get_MLCBacklashMeanB(),
-                
-                # Jaws Group
-                'jaw_x1': geoModel.get_JawX1(),
-                'jaw_x2': geoModel.get_JawX2(),
-                'jaw_y1': geoModel.get_JawY1(),
-                'jaw_y2': geoModel.get_JawY2(),
-                
-                # Jaw Parallelism
-                'jaw_parallelism_x1': geoModel.get_JawParallelismX1(),
-                'jaw_parallelism_x2': geoModel.get_JawParallelismX2(),
-                'jaw_parallelism_y1': geoModel.get_JawParallelismY1(),
-                'jaw_parallelism_y2': geoModel.get_JawParallelismY2(),
+                'type': geoModel.get_type(),
+                'date': geoModel.get_date().date() if hasattr(geoModel.get_date(), 'date') else geoModel.get_date(),
+                'path': geoModel.get_path(),
+                'relOutput': float(rel_output) if rel_output is not None else None,
+                'relUniformity': float(rel_uniformity) if rel_uniformity is not None else None,
+                'centerShift': float(center_shift) if center_shift is not None else None,
+                'machineId': geoModel.get_machine_SN(),
+                'note': f"Baseline: {geoModel.get_baseline()}, Geometry check data available" if geoModel.get_baseline() else "Geometry check data available",
             }
 
-            # Upload to database
-            table_name = 'geo6xfff_data'  # Adjust table name as needed
-            result = self.db_adapter.upload_beam_data(table_name, data)
+            # Upload to database, passing path for machine creation
+            table_name = 'beams'
+            result = self.db_adapter.upload_beam_data(table_name, data, path=geoModel.get_path())
             
             # Optionally upload MLC leaf data to separate tables
             # This could be done in a separate method or as part of this method
@@ -374,7 +455,9 @@ class Uploader:
             return result
 
         except Exception as e:
-            print(f"Error during Geo model upload: {e}")
+            error_msg = f"Error during Geo model upload: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
             return False
 
     def uploadMLCLeaves(self, geoModel, table_name: str = 'mlc_leaves_data'):

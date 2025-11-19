@@ -71,9 +71,12 @@ class data_extractor:
         """
         Extract data for E-beam model from CSV file
         """
+        import os
+        
         try:
-            # Get the path from the eBeam object
-            path = eBeam.get_path()
+            # Get the folder path and construct the CSV file path
+            folder_path = eBeam.get_path()
+            path = os.path.join(folder_path, "Results.csv")
             
             # Parse the CSV file
             with open(path, 'r', newline='', encoding='utf-8') as csvfile:
@@ -82,20 +85,23 @@ class data_extractor:
                 # Read through the CSV rows
                 for row in reader:
                     name = row.get('Name [Unit]', '').strip()
-                    value = row.get(' Value', '')
+                    value = row.get(' Value', '').strip()
+                    if not name or not value:
+                        continue
+                    
+                    # Convert value to Decimal
+                    try:
+                        dec_val = Decimal(value)
+                    except (ValueError, TypeError, decimal.InvalidOperation):
+                        dec_val = Decimal(-1)
+                    
                     # Check for relative output (BeamOutputChange)
                     if 'BeamOutputChange' in name:
-                        try:
-                            eBeam.set_relative_output(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            eBeam.set_relative_output(Decimal(-1))
+                        eBeam.set_relative_output(dec_val)
                     
                     # Check for relative uniformity (BeamUniformityChange)
                     elif 'BeamUniformityChange' in name:
-                        try:
-                            eBeam.set_relative_uniformity(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            eBeam.set_relative_uniformity(Decimal(-1))
+                        eBeam.set_relative_uniformity(dec_val)
                 
         except FileNotFoundError:
             print(f"CSV file not found: {path}")
@@ -124,11 +130,14 @@ class data_extractor:
     # --- X-BEAM ---
     def xModelExtraction(self, xBeam):
         """
-        Extract data for X-beam model from CVS file
+        Extract data for X-beam model from CSV file
         """
+        import os
+        
         try:
-            # Get the path from the eBeam object
-            path = xBeam.get_path()
+            # Get the folder path and construct the CSV file path
+            folder_path = xBeam.get_path()
+            path = os.path.join(folder_path, "Results.csv")
             
             # Parse the CSV file
             with open(path, 'r', newline='', encoding='utf-8') as csvfile:
@@ -137,28 +146,27 @@ class data_extractor:
                 # Read through the CSV rows
                 for row in reader:
                     name = row.get('Name [Unit]', '').strip()
-                    value = row.get(' Value', '')
+                    value = row.get(' Value', '').strip()
+                    if not name or not value:
+                        continue
+                    
+                    # Convert value to Decimal
+                    try:
+                        dec_val = Decimal(value)
+                    except (ValueError, TypeError, decimal.InvalidOperation):
+                        dec_val = Decimal(-1)
                     
                     # Check for relative output (BeamOutputChange)
                     if 'BeamOutputChange' in name:
-                        try:
-                            xBeam.set_relative_output(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            xBeam.set_relative_output(Decimal(-1))
+                        xBeam.set_relative_output(dec_val)
                     
                     # Check for relative uniformity (BeamUniformityChange)
                     elif 'BeamUniformityChange' in name:
-                        try:
-                            xBeam.set_relative_uniformity(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            xBeam.set_relative_uniformity(Decimal(-1))
+                        xBeam.set_relative_uniformity(dec_val)
 
                     # Check for Center Shift (BeamCenterShift)
                     elif 'BeamCenterShift' in name:
-                        try:
-                            xBeam.set_center_shift(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            xBeam.set_center_shift(Decimal(-1))
+                        xBeam.set_center_shift(dec_val)
                 
         except FileNotFoundError:
             print(f"CSV file not found: {path}")
@@ -191,10 +199,13 @@ class data_extractor:
         Reads each row and calls the appropriate setter.
         """
         import csv
+        import os
         from decimal import Decimal, InvalidOperation
 
         try:
-            path = geoModel.get_path()
+            # Get the folder path and construct the CSV file path
+            folder_path = geoModel.get_path()
+            path = os.path.join(folder_path, "Results.csv")
 
             with open(path, 'r', newline='', encoding='utf-8') as csvfile:
                 reader = csv.DictReader(csvfile)

@@ -1,4 +1,5 @@
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from .data_extractor import data_extractor
@@ -10,15 +11,16 @@ from ..models.XBeamModel import XBeamModel
 from ..models.Geo6xfffModel import Geo6xfffModel
 from ..models.ImageModel import ImageModel
 
-# Load environment variables from .env file
-# Look for .env in the data_manipulation directory
-env_path = Path(__file__).parent.parent / '.env'
-if env_path.exists():
-    load_dotenv(env_path)
-else:
-    # Try project root as fallback
-    project_root = Path(__file__).parent.parent.parent.parent
-    load_dotenv(project_root / '.env')
+# Set up logger for this module
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env directory in project root
+project_root = Path(__file__).parent.parent.parent.parent
+# Try .env/apicreds.txt first (existing structure), then fall back to .env file
+env_path = project_root / '.env' / 'apicreds.txt'
+if not env_path.exists():
+    env_path = project_root / '.env'
+load_dotenv(env_path)
 
 
 class DataProcessor:
@@ -32,6 +34,7 @@ class DataProcessor:
         """
         Initialize the DataProcessor with the directory path containing beam data.
         """
+        self.folder_path = path  # Store the folder path for uploads
         self.data_path = os.path.join(path, "Results.csv")
         self.image_path = os.path.join(path, "BeamProfileCheck.xim")
 
@@ -51,7 +54,7 @@ class DataProcessor:
         Sets path, type, date, and machine SN automatically.
         """
         model = model_class()
-        model.set_path(self.data_path)
+        model.set_path(self.folder_path)  # Use folder path instead of data_path for database
         model.set_type(beam_type)
         model.set_date(model._getDateFromPathName(self.data_path))
         model.set_machine_SN(model._getSNFromPathName(self.data_path))
@@ -107,19 +110,41 @@ class DataProcessor:
                     print("Running test extraction...")
                     self.data_ex.extractTest(beam)
                 else:
+                    logger.info("Running normal extraction...")
                     print("Running normal extraction...")
                     self.data_ex.extract(beam)
+                    logger.info("Uploading to Supabase...")
                     print("Uploading to SupaBase...")
                     #Set Up DataBase
                     # Connect to database using environment variables
+                    # Connect to database using credentials from .env file
                     connection_params = {
                         'url': os.getenv('SUPABASE_URL'),
                         'key': os.getenv('SUPABASE_KEY')
                     }
-                    self.up.connect(connection_params)
-                    # self.up.upload(beam)
-                    print("Uploading Complete")
+                    
+                    if not connection_params['url'] or not connection_params['key']:
+                        error_msg = "Error: SUPABASE_URL and SUPABASE_KEY must be set in .env file"
+                        logger.error(error_msg)
+                        print(error_msg)
+                        return
+                    
+                    logger.info(f"Connecting to Supabase with URL: {connection_params['url'][:30]}...")
+                    if self.up.connect(connection_params):
+                        logger.info("Successfully connected to Supabase, uploading beam data...")
+                        upload_result = self.up.upload(beam)  # Actually upload the data
+                        if upload_result:
+                            logger.info("Upload completed successfully")
+                            print("Uploading Complete")
+                        else:
+                            logger.warning("Upload returned False - check for errors above")
+                            print("Upload may have failed - check logs")
+                    else:
+                        logger.error("Failed to connect to Supabase")
+                        print("Error: Failed to connect to Supabase")
+                    
                     self.up.close()
+                    logger.info("Supabase connection closed")
 
                 
 

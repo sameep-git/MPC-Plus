@@ -37,26 +37,55 @@ def print_banner():
     print("=" * 50)
     print()
 
-def start_monitor(idrive_path="iDrive", background=False):
+def start_monitor(idrive_path="iDrive", background=False, lexar=False):
     """
     Start the folder monitor
     
     Args:
-        idrive_path (str): Path to monitor
+        idrive_path (str): Path to monitor (or 'lexar' for Lexar drive)
         background (bool): Whether to run in background
+        lexar (bool): Whether to monitor Lexar drive locations
     """
     try:
-        print(f"Starting folder monitor for: {os.path.abspath(idrive_path)}")
-        
-        if background:
-            # Use the service runner for background mode
-            service = MonitorService()
-            service.start_background()
-        else:
-            # Direct monitoring mode
-            monitor = FolderMonitor(idrive_path)
+        # Handle Lexar drive monitoring
+        if lexar or idrive_path.lower() == 'lexar':
+            lexar_base = "/Volumes/Lexar/MPC Data"
+            paths = [
+                os.path.join(lexar_base, "Arlington"),
+                os.path.join(lexar_base, "Weatherford")
+            ]
+            
+            # Check if paths exist
+            existing_paths = [p for p in paths if os.path.exists(p)]
+            if not existing_paths:
+                logger.error(f"Lexar drive paths not found. Expected: {paths}")
+                logger.error("Please ensure the Lexar drive is mounted and contains 'MPC Data/Arlington' and 'MPC Data/Weatherford' folders")
+                sys.exit(1)
+            
+            print(f"Starting folder monitor for Lexar drive locations:")
+            for path in existing_paths:
+                print(f"  - {path}")
+            
+            if background:
+                logger.warning("Background mode with multiple paths not fully supported. Using direct mode.")
+            
+            # Direct monitoring mode for multiple paths
+            monitor = FolderMonitor(existing_paths)
             monitor.scan_existing_folders()
             monitor.start_monitoring()
+        else:
+            # Single path monitoring
+            print(f"Starting folder monitor for: {os.path.abspath(idrive_path)}")
+            
+            if background:
+                # Use the service runner for background mode
+                service = MonitorService()
+                service.start_background()
+            else:
+                # Direct monitoring mode
+                monitor = FolderMonitor(idrive_path)
+                monitor.scan_existing_folders()
+                monitor.start_monitoring()
             
     except KeyboardInterrupt:
         print("\nShutting down...")
@@ -105,15 +134,18 @@ Examples:
   python src/main.py setup           # Set up the system
   python src/main.py start           # Start folder monitoring
   python src/main.py start --path custom_folder  # Monitor custom folder
+  python src/main.py start --lexar   # Monitor Lexar drive (Arlington & Weatherford)
   python src/main.py start --background          # Run in background
-  python -m src.data_manipulation.file_monitoring.main start
+  python -m src.data_manipulation.file_monitoring.main start --lexar
         """
     )
     
     parser.add_argument('command', choices=['setup', 'start', 'status'], 
                        help='Command to execute')
     parser.add_argument('--path', '-p', default='iDrive',
-                       help='Path to monitor (default: iDrive)')
+                       help='Path to monitor (default: iDrive, or use "lexar" for Lexar drive)')
+    parser.add_argument('--lexar', '-l', action='store_true',
+                       help='Monitor Lexar drive locations (Arlington and Weatherford)')
     parser.add_argument('--background', '-b', action='store_true',
                        help='Run in background mode')
     parser.add_argument('--verbose', '-v', action='store_true',
@@ -130,7 +162,7 @@ Examples:
     if args.command == 'setup':
         setup_system()
     elif args.command == 'start':
-        start_monitor(args.path, args.background)
+        start_monitor(args.path, args.background, args.lexar)
     elif args.command == 'status':
         service = MonitorService()
         service.status()
