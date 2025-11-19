@@ -6,11 +6,11 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class MachineController : ControllerBase
+public class MachinesController : ControllerBase
 {
     private readonly IMachineRepository _repository;
 
-    public MachineController(IMachineRepository repository)
+    public MachinesController(IMachineRepository repository)
     {
         _repository = repository;
     }

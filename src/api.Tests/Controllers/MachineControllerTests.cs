@@ -8,12 +8,12 @@ namespace Api.Tests.Controllers;
 public class MachineControllerTests
 {
     private readonly Mock<IMachineRepository> _mockRepository;
-    private readonly MachineController _controller;
+    private readonly MachinesController _controller;
 
     public MachineControllerTests()
     {
         _mockRepository = new Mock<IMachineRepository>();
-        _controller = new MachineController(_mockRepository.Object);
+    _controller = new MachinesController(_mockRepository.Object);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class MachineControllerTests
 
         // Assert
         var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
-        createdResult.ActionName.Should().Be(nameof(MachineController.GetById));
+    createdResult.ActionName.Should().Be(nameof(MachinesController.GetById));
         createdResult.RouteValues!["id"].Should().Be("4");
         var returnedMachine = createdResult.Value.Should().BeOfType<Machine>().Subject;
         returnedMachine.Id.Should().Be("4");
