@@ -22,4 +22,4 @@ class EBeamModel(AbstractBeamModel):
     
     def set_relative_output(self, relative_output):
         self._relative_output = relative_output
-    
+
