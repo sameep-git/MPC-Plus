@@ -11,7 +11,7 @@ class AbstractBeamModel(ABC):
         self._path = ""
         self._date = None
         self._machine_SN = None
-        self._baseline = False;
+        self._baseline = False
 
     # --- Getters ---
     def get_type(self):
