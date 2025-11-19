@@ -32,7 +32,7 @@ tags:
     description: Image operations
 
 paths:
-  /beam:
+  /beams:
     get:
       tags:
         - Beam
@@ -151,7 +151,7 @@ paths:
         '404':
           description: Beam not found
 
-  /beam/{beamId}:
+  /beams/{beamId}:
     get:
       tags:
         - Beam
@@ -174,7 +174,7 @@ paths:
         '404':
           description: Beam not found
 
-  /beam/types:
+  /beams/types:
     get:
       tags:
         - Beam
