@@ -88,6 +88,11 @@ class DataProcessor:
         Detects the beam type, initializes the model, 
         and sends it to the correct extractor method.
         """
+        
+        # Skip EnhancedMLCCheckTemplate6x - these have leaves we don't want to ingest
+        if "EnhancedMLCCheckTemplate6x" in self.data_path:
+            logger.info(f"Skipping EnhancedMLCCheckTemplate6x path (leaves not ingested): {self.data_path}")
+            return
 
         beam_map = {
             "6e": (EBeamModel, "6e"),
@@ -96,25 +101,29 @@ class DataProcessor:
             "16e": (EBeamModel, "16e"),
             "10x": (XBeamModel, "10x"),
             "15x": (XBeamModel, "15x"),
-            "6x": (Geo6xfffModel, "6x"),
+            "6x": (Geo6xfffModel, "6x"),  # Geometry checks use 6x as the beam type
         }
 
         for key, (model_class, beam_type) in beam_map.items():
             if key in self.data_path:
-                print(f"{beam_type.upper()} Beam detected")
+                # Special handling for 6x: use "6xFFF" only for BeamCheckTemplate6xFFF
+                if key == "6x":
+                    if "BeamCheckTemplate6xFFF" in self.data_path:
+                        beam_type = "6xFFF"
+                    # For other 6x templates (like GeometryCheckTemplate6xMVkVEnhancedCouch), use "6x"
+                
+                logger.info(f"{beam_type.upper()} Beam detected")
 
                 # Initialize the correct beam model (EBeam, XBeam, etc.)
                 beam = self._init_beam_model(model_class, beam_type)
 
                 if is_test:
-                    print("Running test extraction...")
+                    logger.info("Running test extraction...")
                     self.data_ex.extractTest(beam)
                 else:
                     logger.info("Running normal extraction...")
-                    print("Running normal extraction...")
                     self.data_ex.extract(beam)
                     logger.info("Uploading to Supabase...")
-                    print("Uploading to SupaBase...")
                     #Set Up DataBase
                     # Connect to database using environment variables
                     # Connect to database using credentials from .env file
@@ -126,7 +135,6 @@ class DataProcessor:
                     if not connection_params['url'] or not connection_params['key']:
                         error_msg = "Error: SUPABASE_URL and SUPABASE_KEY must be set in .env file"
                         logger.error(error_msg)
-                        print(error_msg)
                         return
                     
                     logger.info(f"Connecting to Supabase with URL: {connection_params['url'][:30]}...")
@@ -135,13 +143,10 @@ class DataProcessor:
                         upload_result = self.up.upload(beam)  # Actually upload the data
                         if upload_result:
                             logger.info("Upload completed successfully")
-                            print("Uploading Complete")
                         else:
                             logger.warning("Upload returned False - check for errors above")
-                            print("Upload may have failed - check logs")
                     else:
                         logger.error("Failed to connect to Supabase")
-                        print("Error: Failed to connect to Supabase")
                     
                     self.up.close()
                     logger.info("Supabase connection closed")
@@ -149,7 +154,7 @@ class DataProcessor:
                 
 
                 # --- Image Extraction for all beam types ---
-                print(f"Extracting image data for {beam_type} beam...")
+                logger.debug(f"Extracting image data for {beam_type} beam...")
                 self._init_beam_image(beam_type)
                 return
 

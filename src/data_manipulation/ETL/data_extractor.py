@@ -16,7 +16,11 @@ Supported beam models:
 
 import csv
 import decimal
+import logging
 from decimal import Decimal
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 class data_extractor:
     """
@@ -104,11 +108,11 @@ class data_extractor:
                         eBeam.set_relative_uniformity(dec_val)
                 
         except FileNotFoundError:
-            print(f"CSV file not found: {path}")
+            logger.error(f"CSV file not found: {path}")
         except csv.Error as e:
-            print(f"Error parsing CSV file: {e}")
+            logger.error(f"Error parsing CSV file: {e}")
         except Exception as e:
-            print(f"Error during extraction: {e}")
+            logger.error(f"Error during extraction: {e}", exc_info=True)
 
     def testeModelExtraction(self, eBeam):
         """
@@ -160,11 +164,11 @@ class data_extractor:
                         xBeam.set_center_shift(dec_val)
                 
         except FileNotFoundError:
-            print(f"CSV file not found: {path}")
+            logger.error(f"CSV file not found: {path}")
         except csv.Error as e:
-            print(f"Error parsing CSV file: {e}")
+            logger.error(f"Error parsing CSV file: {e}")
         except Exception as e:
-            print(f"Error during extraction: {e}")
+            logger.error(f"Error during extraction: {e}", exc_info=True)
 
     def testxModelExtraction(self, xBeam):
         """
@@ -245,41 +249,85 @@ class data_extractor:
                         geoModel.set_RotationInducedCouchShiftFullRange(dec_val)
 
                     # ---- MLC Leaves ----
-                    elif 'MLCLeavesA/MLCLeaf' in name:
+                    elif 'MLCLeavesA/MLCLeaf' in name or '/MLCLeavesA/MLCLeaf' in name:
                         try:
-                            index = int(name.split('MLCLeaf')[1].split()[0])
-                            geoModel.set_MLCLeafA(index, dec_val)
-                        except Exception:
+                            # Extract leaf number from patterns like:
+                            # "CollimationGroup/MLCGroup/MLCLeavesA/MLCLeaf11 [mm]"
+                            # or "MLCLeavesA/MLCLeaf11 [mm]"
+                            parts = name.split('MLCLeaf')
+                            if len(parts) > 1:
+                                # Get the part after "MLCLeaf" and extract the number
+                                leaf_part = parts[1].strip()
+                                # Remove brackets and extract number: "11 [mm]" -> "11"
+                                index_str = leaf_part.split()[0] if ' ' in leaf_part else leaf_part.split('[')[0]
+                                index = int(index_str)
+                                if 1 <= index <= 60:  # Validate leaf number range (1-60)
+                                    geoModel.set_MLCLeafA(index, dec_val)
+                        except (ValueError, IndexError, Exception) as e:
+                            # Silently skip invalid entries
                             pass
-                    elif 'MLCLeavesB/MLCLeaf' in name:
+                    elif 'MLCLeavesB/MLCLeaf' in name or '/MLCLeavesB/MLCLeaf' in name:
                         try:
-                            index = int(name.split('MLCLeaf')[1].split()[0])
-                            geoModel.set_MLCLeafB(index, dec_val)
-                        except Exception:
+                            # Extract leaf number from patterns like:
+                            # "CollimationGroup/MLCGroup/MLCLeavesB/MLCLeaf11 [mm]"
+                            # or "MLCLeavesB/MLCLeaf11 [mm]"
+                            parts = name.split('MLCLeaf')
+                            if len(parts) > 1:
+                                # Get the part after "MLCLeaf" and extract the number
+                                leaf_part = parts[1].strip()
+                                # Remove brackets and extract number: "11 [mm]" -> "11"
+                                index_str = leaf_part.split()[0] if ' ' in leaf_part else leaf_part.split('[')[0]
+                                index = int(index_str)
+                                if 1 <= index <= 60:  # Validate leaf number range (1-60)
+                                    geoModel.set_MLCLeafB(index, dec_val)
+                        except (ValueError, IndexError, Exception) as e:
+                            # Silently skip invalid entries
                             pass
 
                     # ---- MLC Offsets ----
-                    elif 'MaxOffsetA' in name:
+                    elif 'MLCMaxOffsetA' in name or 'MaxOffsetA' in name:
                         geoModel.set_MaxOffsetA(dec_val)
-                    elif 'MaxOffsetB' in name:
+                    elif 'MLCMaxOffsetB' in name or 'MaxOffsetB' in name:
                         geoModel.set_MaxOffsetB(dec_val)
-                    elif 'MeanOffsetA' in name:
+                    elif 'MLCMeanOffsetA' in name or 'MeanOffsetA' in name:
                         geoModel.set_MeanOffsetA(dec_val)
-                    elif 'MeanOffsetB' in name:
+                    elif 'MLCMeanOffsetB' in name or 'MeanOffsetB' in name:
                         geoModel.set_MeanOffsetB(dec_val)
 
                     # ---- MLC Backlash ----
-                    elif 'MLCBacklashLeavesA/MLCBacklashLeaf' in name:
+                    elif 'MLCBacklashLeavesA/MLCBacklashLeaf' in name or '/MLCBacklashLeavesA/MLCBacklashLeaf' in name:
                         try:
-                            index = int(name.split('MLCBacklashLeaf')[1].split()[0])
-                            geoModel.set_MLCBacklashA(index, dec_val)
-                        except Exception:
+                            # Extract leaf number from patterns like:
+                            # "CollimationGroup/MLCBacklashGroup/MLCBacklashLeavesA/MLCBacklashLeaf11 [mm]"
+                            # or "MLCBacklashLeavesA/MLCBacklashLeaf11 [mm]"
+                            parts = name.split('MLCBacklashLeaf')
+                            if len(parts) > 1:
+                                # Get the part after "MLCBacklashLeaf" and extract the number
+                                leaf_part = parts[1].strip()
+                                # Remove brackets and extract number: "11 [mm]" -> "11"
+                                index_str = leaf_part.split()[0] if ' ' in leaf_part else leaf_part.split('[')[0]
+                                index = int(index_str)
+                                if 1 <= index <= 60:  # Validate leaf number range (1-60)
+                                    geoModel.set_MLCBacklashA(index, dec_val)
+                        except (ValueError, IndexError, Exception) as e:
+                            # Silently skip invalid entries
                             pass
-                    elif 'MLCBacklashLeavesB/MLCBacklashLeaf' in name:
+                    elif 'MLCBacklashLeavesB/MLCBacklashLeaf' in name or '/MLCBacklashLeavesB/MLCBacklashLeaf' in name:
                         try:
-                            index = int(name.split('MLCBacklashLeaf')[1].split()[0])
-                            geoModel.set_MLCBacklashB(index, dec_val)
-                        except Exception:
+                            # Extract leaf number from patterns like:
+                            # "CollimationGroup/MLCBacklashGroup/MLCBacklashLeavesB/MLCBacklashLeaf11 [mm]"
+                            # or "MLCBacklashLeavesB/MLCBacklashLeaf11 [mm]"
+                            parts = name.split('MLCBacklashLeaf')
+                            if len(parts) > 1:
+                                # Get the part after "MLCBacklashLeaf" and extract the number
+                                leaf_part = parts[1].strip()
+                                # Remove brackets and extract number: "11 [mm]" -> "11"
+                                index_str = leaf_part.split()[0] if ' ' in leaf_part else leaf_part.split('[')[0]
+                                index = int(index_str)
+                                if 1 <= index <= 60:  # Validate leaf number range (1-60)
+                                    geoModel.set_MLCBacklashB(index, dec_val)
+                        except (ValueError, IndexError, Exception) as e:
+                            # Silently skip invalid entries
                             pass
                     elif 'MLCBacklashMaxA' in name:
                         geoModel.set_MLCBacklashMaxA(dec_val)
@@ -311,11 +359,11 @@ class data_extractor:
                         geoModel.set_JawParallelismY2(dec_val)
 
         except FileNotFoundError:
-            print(f"CSV file not found: {path}")
+            logger.error(f"CSV file not found: {path}")
         except csv.Error as e:
-            print(f"Error parsing CSV file: {e}")
+            logger.error(f"Error parsing CSV file: {e}")
         except Exception as e:
-            print(f"Error during extraction: {e}")
+            logger.error(f"Error during extraction: {e}", exc_info=True)
 
     def testGeoModelExtraction(self, geoModel):
         """

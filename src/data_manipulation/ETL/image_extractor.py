@@ -17,4 +17,4 @@ class image_extractor:
         #xim_img = XIM("path/to/image.xim")
         tempImage = XIM(image.get_path())
         image.set_image(tempImage)
-        print(tempImage.properties)
+        # Image properties are stored but not printed to avoid verbose output

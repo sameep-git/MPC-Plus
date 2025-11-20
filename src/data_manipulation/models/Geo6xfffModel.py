@@ -34,9 +34,9 @@ class Geo6xfffModel(AbstractBeamModel):
         self._RotationInducedCouchShiftFullRange = Decimal('0.0')
 
         # ---- CollimationGroup / MLCGroup ----
-        # 40 leaves for A and B banks (11–50)
-        self._MLCLeavesA = {f"Leaf{i}": Decimal('0.0') for i in range(11, 51)}
-        self._MLCLeavesB = {f"Leaf{i}": Decimal('0.0') for i in range(11, 51)}
+        # 60 leaves for A and B banks (1–60)
+        self._MLCLeavesA = {f"Leaf{i}": Decimal('0.0') for i in range(1, 61)}
+        self._MLCLeavesB = {f"Leaf{i}": Decimal('0.0') for i in range(1, 61)}
 
         self._MaxOffsetA = Decimal('0.0')
         self._MaxOffsetB = Decimal('0.0')
@@ -44,8 +44,9 @@ class Geo6xfffModel(AbstractBeamModel):
         self._MeanOffsetB = Decimal('0.0')
 
         # ---- CollimationGroup / MLCBacklashGroup ----
-        self._MLCBacklashA = {f"Leaf{i}": Decimal('0.0') for i in range(11, 51)}
-        self._MLCBacklashB = {f"Leaf{i}": Decimal('0.0') for i in range(11, 51)}
+        # 60 leaves for A and B banks (1–60)
+        self._MLCBacklashA = {f"Leaf{i}": Decimal('0.0') for i in range(1, 61)}
+        self._MLCBacklashB = {f"Leaf{i}": Decimal('0.0') for i in range(1, 61)}
 
         self._MLCBacklashMaxA = Decimal('0.0')
         self._MLCBacklashMaxB = Decimal('0.0')
