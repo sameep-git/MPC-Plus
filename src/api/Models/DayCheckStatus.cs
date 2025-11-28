@@ -13,4 +13,16 @@ public class DayCheckStatus
 
     /// <summary>Overall geometry check status for the day (null if no checks).</summary>
     public string? GeometryCheckStatus { get; set; }
+
+    /// <summary>
+    /// Convenience numeric value to show in the UI table for the beam check.
+    /// This is derived from beam metrics (relOutput, relUniformity, centerShift) when available.
+    /// </summary>
+    public double? BeamValue { get; set; }
+
+    /// <summary>
+    /// Convenience numeric value to show in the UI table for the geometry check.
+    /// This is derived from geo metrics (relativeOutput, relativeUniformity, centerShift, isoCenterSize) when available.
+    /// </summary>
+    public double? GeometryValue { get; set; }
 }

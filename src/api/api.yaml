@@ -600,19 +600,149 @@ paths:
                 type: string
                 format: binary
 
-  /geocheck:
+
+  /geochecks:
     get:
       tags:
         - Geocheck
-      summary: Get geometry check data
-      description: Retrieves geometry check information
+      summary: Get geometry checks
+      description: Retrieves geometry check data, optionally filtered by machine, type, and date range
+      parameters:
+        - name: machineId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Machine identifier
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Type of beam (e.g., 6xff)
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Specific date for geometry check
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Start date for date range
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: End date for date range
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                type: object
+                type: array
+                items:
+                  $ref: '#/components/schemas/GeoCheck'
+
+    post:
+      tags:
+        - Geocheck
+      summary: Create a geometry check
+      description: Creates a new geometry check entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoCheck'
+      responses:
+        '201':
+          description: Geometry check created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoCheck'
+        '400':
+          description: Bad request
+
+  /geochecks/{id}:
+    get:
+      tags:
+        - Geocheck
+      summary: Get geometry check by ID
+      description: Retrieves a single geometry check by its identifier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique geometry check identifier
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoCheck'
+        '404':
+          description: Geometry check not found
+
+    put:
+      tags:
+        - Geocheck
+      summary: Update geometry check
+      description: Updates an existing geometry check
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique geometry check identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoCheck'
+      responses:
+        '200':
+          description: Geometry check updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoCheck'
+        '400':
+          description: Bad request
+        '404':
+          description: Geometry check not found
+
+    delete:
+      tags:
+        - Geocheck
+      summary: Delete geometry check
+      description: Removes a geometry check from the system
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique geometry check identifier
+      responses:
+        '204':
+          description: Geometry check deleted successfully
+        '404':
+          description: Geometry check not found
+
 
 components:
   schemas:
@@ -742,6 +872,63 @@ components:
         - date
         - beamCheckStatus
         - geometryCheckStatus
+
+    GeoCheck:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the geometry check
+        type:
+          type: string
+          description: Type of beam (e.g., 6xff)
+        date:
+          type: string
+          format: date
+          description: Date of the geometry check
+        machineId:
+          type: string
+          description: Associated machine identifier
+        path:
+          type: string
+          description: File path to the geometry check data
+        isoCenterSize:
+          type: number
+          format: double
+          description: Iso center size measurement
+        isoCenterMVOffset:
+          type: number
+          format: double
+          description: Iso center MV offset measurement
+        isoCenterKVOffset:
+          type: number
+          format: double
+          description: Iso center KV offset measurement
+        relativeOutput:
+          type: number
+          format: double
+          description: Relative output value
+        relativeUniformity:
+          type: number
+          format: double
+          description: Relative uniformity value
+        centerShift:
+          type: number
+          format: double
+          description: Center shift value
+        collimationRotationOffset:
+          type: number
+          format: double
+          description: Collimation rotation offset measurement
+        gantryAbsolute:
+          type: number
+          format: double
+          description: Gantry absolute measurement
+      required:
+        - id
+        - type
+        - date
+        - machineId
 
     Baseline:
       type: object

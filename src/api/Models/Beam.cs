@@ -31,5 +31,12 @@ public class Beam
 
     /// <summary>Notes about the beam.</summary>
     public string? Note { get; set; }
+
+    /// <summary>
+    /// Convenience property representing a single numeric value to display in UIs.
+    /// Priority: RelOutput, RelUniformity, CenterShift.
+    /// This is not persisted to the database; it's computed by repositories.
+    /// </summary>
+    public double? Value { get; set; }
 }
 

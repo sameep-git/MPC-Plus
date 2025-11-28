@@ -9,10 +9,12 @@ namespace Api.Controllers;
 public class ResultsController : ControllerBase
 {
     private readonly IBeamRepository _beamRepository;
+    private readonly IGeoCheckRepository _geoCheckRepository;
 
-    public ResultsController(IBeamRepository beamRepository)
+    public ResultsController(IBeamRepository beamRepository, IGeoCheckRepository geoCheckRepository)
     {
         _beamRepository = beamRepository;
+        _geoCheckRepository = geoCheckRepository;
     }
 
     [HttpGet]
@@ -52,21 +54,50 @@ public class ResultsController : ControllerBase
             endDate: endDate,
             cancellationToken: cancellationToken);
 
-        // Group by date and aggregate status
-        var dailyChecks = new Dictionary<DateOnly, string?>();
+        var geoChecks = await _geoCheckRepository.GetAllAsync(
+            machineId: machineId,
+            startDate: startDate,
+            endDate: endDate,
+            cancellationToken: cancellationToken);
+
+    // Group by date and aggregate status + example display values
+    var dailyChecks = new Dictionary<DateOnly, (string? beamStatus, double? beamValue, string? geoStatus, double? geoValue)>();
+        
+        // Process beam checks
         foreach (var check in beamChecks)
         {
             var date = check.Date;
             var status = DetermineCheckStatus(check);
-            
-            // If we already have a status for this date, take the worse one
+            // derive a single numeric value for display (prefer RelOutput, then RelUniformity, then CenterShift)
+            double? value = check.RelOutput ?? check.RelUniformity ?? check.CenterShift;
+
             if (dailyChecks.ContainsKey(date))
             {
-                dailyChecks[date] = AgregateStatuses(dailyChecks[date], status);
+                var (existingBeamStatus, existingBeamValue, geoStatus, geoValue) = dailyChecks[date];
+                dailyChecks[date] = (AggregateStatuses(existingBeamStatus, status), existingBeamValue ?? value, geoStatus, geoValue);
             }
             else
             {
-                dailyChecks[date] = status;
+                dailyChecks[date] = (status, value, null, null);
+            }
+        }
+
+        // Process geometry checks
+        foreach (var check in geoChecks)
+        {
+            var date = check.Date;
+            var status = DetermineGeoCheckStatus(check);
+            // derive a single numeric value for display (prefer RelativeOutput, then RelativeUniformity, then CenterShift, then IsoCenterSize)
+            double? value = check.RelativeOutput ?? check.RelativeUniformity ?? check.CenterShift ?? check.IsoCenterSize;
+
+            if (dailyChecks.ContainsKey(date))
+            {
+                var (beamStatus, beamValue, existingGeoStatus, existingGeoValue) = dailyChecks[date];
+                dailyChecks[date] = (beamStatus, beamValue, AggregateStatuses(existingGeoStatus, status), existingGeoValue ?? value);
+            }
+            else
+            {
+                dailyChecks[date] = (null, null, status, value);
             }
         }
 
@@ -75,8 +106,10 @@ public class ResultsController : ControllerBase
             .Select(kvp => new DayCheckStatus
             {
                 Date = kvp.Key.ToDateTime(TimeOnly.MinValue),
-                BeamCheckStatus = kvp.Value,
-                GeometryCheckStatus = null  // TODO: Add geometry checks when model exists
+                BeamCheckStatus = kvp.Value.beamStatus,
+                GeometryCheckStatus = kvp.Value.geoStatus,
+                BeamValue = kvp.Value.beamValue,
+                GeometryValue = kvp.Value.geoValue
             })
             .ToList();
 
@@ -102,13 +135,25 @@ public class ResultsController : ControllerBase
     }
 
     /// <summary>
+    /// Determine the status of a geometry check based on pass criteria.
+    /// </summary>
+    private static string DetermineGeoCheckStatus(GeoCheck geoCheck)
+    {
+        // TODO: Implement actual pass/warning/fail logic based on geometry check metrics
+        // For now, return "pass" as default
+        return "pass";
+    }
+
+    /// <summary>
     /// Aggregate two statuses, returning the worse one.
     /// Hierarchy: fail > warning > pass
     /// </summary>
-    private static string AgregateStatuses(string? status1, string? status2)
+    private static string AggregateStatuses(string? status1, string? status2)
     {
         if (status1 == "fail" || status2 == "fail") return "fail";
         if (status1 == "warning" || status2 == "warning") return "warning";
         return "pass";
     }
+
+
 }

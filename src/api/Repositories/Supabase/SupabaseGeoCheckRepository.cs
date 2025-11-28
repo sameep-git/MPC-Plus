@@ -32,6 +32,12 @@ public class SupabaseGeoCheckRepository : IGeoCheckRepository
             var response = await _client.From<GeoCheckEntity>().Get();
             var geoChecks = response.Models.Select(e => e.ToModel()).ToList();
 
+            // Populate a convenience Value property for UI/display purposes.
+            foreach (var g in geoChecks)
+            {
+                g.Value = g.RelativeOutput ?? g.RelativeUniformity ?? g.CenterShift ?? g.IsoCenterSize;
+            }
+
             if (!string.IsNullOrWhiteSpace(machineId))
                 geoChecks = geoChecks.Where(g => g.MachineId == machineId).ToList();
             if (!string.IsNullOrWhiteSpace(type))
