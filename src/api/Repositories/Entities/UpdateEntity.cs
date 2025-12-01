@@ -11,8 +11,8 @@ public class UpdateEntity : BaseModel
     [Column("id")]
     public string Id { get; set; } = string.Empty;
 
-    [Column("machine")]
-    public string Machine { get; set; } = string.Empty;
+    [Column("machine_id")]
+    public string MachineId { get; set; } = string.Empty;
 
     [Column("info")]
     public string Info { get; set; } = string.Empty;
@@ -25,7 +25,7 @@ public class UpdateEntity : BaseModel
         return new Update
         {
             Id = Id,
-            Machine = Machine,
+            MachineId = MachineId,
             Info = Info,
             Type = Type
         };
@@ -36,7 +36,7 @@ public class UpdateEntity : BaseModel
         return new UpdateEntity
         {
             Id = update.Id,
-            Machine = update.Machine,
+            MachineId = update.MachineId,
             Info = update.Info,
             Type = update.Type
         };

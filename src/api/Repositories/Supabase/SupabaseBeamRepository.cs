@@ -28,12 +28,6 @@ public class SupabaseBeamRepository : IBeamRepository
         {
             var response = await _client.From<BeamEntity>().Get();
             var beams = response.Models.Select(e => e.ToModel()).ToList();
-
-            // Populate a convenience Value property for UI/display purposes.
-            foreach (var b in beams)
-            {
-                b.Value = b.RelOutput ?? b.RelUniformity ?? b.CenterShift;
-            }
             
             if (!string.IsNullOrWhiteSpace(machineId))
                 beams = beams.Where(b => b.MachineId == machineId).ToList();

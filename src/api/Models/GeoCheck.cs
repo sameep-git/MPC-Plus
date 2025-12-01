@@ -48,13 +48,6 @@ public class GeoCheck
     /// <summary>Gantry absolute measurement.</summary>
     public double? GantryAbsolute { get; set; }
 
-    /// <summary>
-    /// Convenience property representing a single numeric value to display in UIs.
-    /// Priority: RelativeOutput, RelativeUniformity, CenterShift, IsoCenterSize.
-    /// This is not persisted to the database; it's computed by repositories.
-    /// </summary>
-    public double? Value { get; set; }
-
     /// <summary>Gantry relative measurement.</summary>
     public double? GantryRelative { get; set; }
 
