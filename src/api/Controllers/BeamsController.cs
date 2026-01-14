@@ -6,11 +6,11 @@ namespace Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BeamController : ControllerBase
+public class BeamsController : ControllerBase
 {
     private readonly IBeamRepository _repository;
 
-    public BeamController(IBeamRepository repository)
+    public BeamsController(IBeamRepository repository)
     {
         _repository = repository;
     }

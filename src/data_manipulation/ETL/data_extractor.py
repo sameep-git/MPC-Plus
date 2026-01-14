@@ -16,7 +16,11 @@ Supported beam models:
 
 import csv
 import decimal
+import logging
 from decimal import Decimal
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 class data_extractor:
     """
@@ -71,9 +75,12 @@ class data_extractor:
         """
         Extract data for E-beam model from CSV file
         """
+        import os
+        
         try:
-            # Get the path from the eBeam object
-            path = eBeam.get_path()
+            # Get the folder path and construct the CSV file path
+            folder_path = eBeam.get_path()
+            path = os.path.join(folder_path, "Results.csv")
             
             # Parse the CSV file
             with open(path, 'r', newline='', encoding='utf-8') as csvfile:
@@ -82,53 +89,50 @@ class data_extractor:
                 # Read through the CSV rows
                 for row in reader:
                     name = row.get('Name [Unit]', '').strip()
-                    value = row.get(' Value', '')
+                    value = row.get(' Value', '').strip()
+                    if not name or not value:
+                        continue
+                    
+                    # Convert value to Decimal
+                    try:
+                        dec_val = Decimal(value)
+                    except (ValueError, TypeError, decimal.InvalidOperation):
+                        dec_val = Decimal(-1)
+                    
                     # Check for relative output (BeamOutputChange)
                     if 'BeamOutputChange' in name:
-                        try:
-                            eBeam.set_relative_output(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            eBeam.set_relative_output(Decimal(-1))
+                        eBeam.set_relative_output(dec_val)
                     
                     # Check for relative uniformity (BeamUniformityChange)
                     elif 'BeamUniformityChange' in name:
-                        try:
-                            eBeam.set_relative_uniformity(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            eBeam.set_relative_uniformity(Decimal(-1))
+                        eBeam.set_relative_uniformity(dec_val)
                 
         except FileNotFoundError:
-            print(f"CSV file not found: {path}")
+            logger.error(f"CSV file not found: {path}")
         except csv.Error as e:
-            print(f"Error parsing CSV file: {e}")
+            logger.error(f"Error parsing CSV file: {e}")
         except Exception as e:
-            print(f"Error during extraction: {e}")
+            logger.error(f"Error during extraction: {e}", exc_info=True)
 
     def testeModelExtraction(self, eBeam):
         """
         Test method for E model extraction.
         Runs eModelExtraction() and prints all values using getters.
         """
-        print("\n--- Starting E Model Extraction Test ---")
         self.eModelExtraction(eBeam)
-        print("--- Extraction Complete ---\n")
-
-            # Print the values
-        print(f"Date: {eBeam.get_date()}")
-        print(f"Machine SN: {eBeam.get_machine_SN()}")
-        print(f"Is Baseline: {eBeam.get_baseline()}")
-        print(f"Relative Uniformity: {eBeam.get_relative_uniformity()}")
-        print(f"Relative Output: {eBeam.get_relative_output()}")
 
 
     # --- X-BEAM ---
     def xModelExtraction(self, xBeam):
         """
-        Extract data for X-beam model from CVS file
+        Extract data for X-beam model from CSV file
         """
+        import os
+        
         try:
-            # Get the path from the eBeam object
-            path = xBeam.get_path()
+            # Get the folder path and construct the CSV file path
+            folder_path = xBeam.get_path()
+            path = os.path.join(folder_path, "Results.csv")
             
             # Parse the CSV file
             with open(path, 'r', newline='', encoding='utf-8') as csvfile:
@@ -137,53 +141,42 @@ class data_extractor:
                 # Read through the CSV rows
                 for row in reader:
                     name = row.get('Name [Unit]', '').strip()
-                    value = row.get(' Value', '')
+                    value = row.get(' Value', '').strip()
+                    if not name or not value:
+                        continue
+                    
+                    # Convert value to Decimal
+                    try:
+                        dec_val = Decimal(value)
+                    except (ValueError, TypeError, decimal.InvalidOperation):
+                        dec_val = Decimal(-1)
                     
                     # Check for relative output (BeamOutputChange)
                     if 'BeamOutputChange' in name:
-                        try:
-                            xBeam.set_relative_output(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            xBeam.set_relative_output(Decimal(-1))
+                        xBeam.set_relative_output(dec_val)
                     
                     # Check for relative uniformity (BeamUniformityChange)
                     elif 'BeamUniformityChange' in name:
-                        try:
-                            xBeam.set_relative_uniformity(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            xBeam.set_relative_uniformity(Decimal(-1))
+                        xBeam.set_relative_uniformity(dec_val)
 
                     # Check for Center Shift (BeamCenterShift)
                     elif 'BeamCenterShift' in name:
-                        try:
-                            xBeam.set_center_shift(Decimal(value))
-                        except (ValueError, TypeError, decimal.InvalidOperation):
-                            xBeam.set_center_shift(Decimal(-1))
+                        xBeam.set_center_shift(dec_val)
                 
         except FileNotFoundError:
-            print(f"CSV file not found: {path}")
+            logger.error(f"CSV file not found: {path}")
         except csv.Error as e:
-            print(f"Error parsing CSV file: {e}")
+            logger.error(f"Error parsing CSV file: {e}")
         except Exception as e:
-            print(f"Error during extraction: {e}")
+            logger.error(f"Error during extraction: {e}", exc_info=True)
 
     def testxModelExtraction(self, xBeam):
         """
         Test method for X model extraction.
         Runs xModelExtraction() and prints all values using getters.
         """
-        print("\n--- Starting X Model Extraction Test ---")
         self.xModelExtraction(xBeam)
-        print("--- Extraction Complete ---\n")
 
-            # Print the values
-        print(f"Date: {xBeam.get_date()}")
-        print(f"Machine SN: {xBeam.get_machine_SN()}")
-        print(f"Is Baseline: {xBeam.get_baseline()}")
-        print(f"Relative Uniformity: {xBeam.get_relative_uniformity()}")
-        print(f"Relative Output: {xBeam.get_relative_output()}")
-        print(f"Center Shift: {xBeam.get_center_shift()}")
-        
     
     def geoModelExtraction(self, geoModel):
         """
@@ -191,10 +184,13 @@ class data_extractor:
         Reads each row and calls the appropriate setter.
         """
         import csv
+        import os
         from decimal import Decimal, InvalidOperation
 
         try:
-            path = geoModel.get_path()
+            # Get the folder path and construct the CSV file path
+            folder_path = geoModel.get_path()
+            path = os.path.join(folder_path, "Results.csv")
 
             with open(path, 'r', newline='', encoding='utf-8') as csvfile:
                 reader = csv.DictReader(csvfile)
@@ -253,41 +249,85 @@ class data_extractor:
                         geoModel.set_RotationInducedCouchShiftFullRange(dec_val)
 
                     # ---- MLC Leaves ----
-                    elif 'MLCLeavesA/MLCLeaf' in name:
+                    elif 'MLCLeavesA/MLCLeaf' in name or '/MLCLeavesA/MLCLeaf' in name:
                         try:
-                            index = int(name.split('MLCLeaf')[1].split()[0])
-                            geoModel.set_MLCLeafA(index, dec_val)
-                        except Exception:
+                            # Extract leaf number from patterns like:
+                            # "CollimationGroup/MLCGroup/MLCLeavesA/MLCLeaf11 [mm]"
+                            # or "MLCLeavesA/MLCLeaf11 [mm]"
+                            parts = name.split('MLCLeaf')
+                            if len(parts) > 1:
+                                # Get the part after "MLCLeaf" and extract the number
+                                leaf_part = parts[1].strip()
+                                # Remove brackets and extract number: "11 [mm]" -> "11"
+                                index_str = leaf_part.split()[0] if ' ' in leaf_part else leaf_part.split('[')[0]
+                                index = int(index_str)
+                                if 1 <= index <= 60:  # Validate leaf number range (1-60)
+                                    geoModel.set_MLCLeafA(index, dec_val)
+                        except (ValueError, IndexError, Exception) as e:
+                            # Silently skip invalid entries
                             pass
-                    elif 'MLCLeavesB/MLCLeaf' in name:
+                    elif 'MLCLeavesB/MLCLeaf' in name or '/MLCLeavesB/MLCLeaf' in name:
                         try:
-                            index = int(name.split('MLCLeaf')[1].split()[0])
-                            geoModel.set_MLCLeafB(index, dec_val)
-                        except Exception:
+                            # Extract leaf number from patterns like:
+                            # "CollimationGroup/MLCGroup/MLCLeavesB/MLCLeaf11 [mm]"
+                            # or "MLCLeavesB/MLCLeaf11 [mm]"
+                            parts = name.split('MLCLeaf')
+                            if len(parts) > 1:
+                                # Get the part after "MLCLeaf" and extract the number
+                                leaf_part = parts[1].strip()
+                                # Remove brackets and extract number: "11 [mm]" -> "11"
+                                index_str = leaf_part.split()[0] if ' ' in leaf_part else leaf_part.split('[')[0]
+                                index = int(index_str)
+                                if 1 <= index <= 60:  # Validate leaf number range (1-60)
+                                    geoModel.set_MLCLeafB(index, dec_val)
+                        except (ValueError, IndexError, Exception) as e:
+                            # Silently skip invalid entries
                             pass
 
                     # ---- MLC Offsets ----
-                    elif 'MaxOffsetA' in name:
+                    elif 'MLCMaxOffsetA' in name or 'MaxOffsetA' in name:
                         geoModel.set_MaxOffsetA(dec_val)
-                    elif 'MaxOffsetB' in name:
+                    elif 'MLCMaxOffsetB' in name or 'MaxOffsetB' in name:
                         geoModel.set_MaxOffsetB(dec_val)
-                    elif 'MeanOffsetA' in name:
+                    elif 'MLCMeanOffsetA' in name or 'MeanOffsetA' in name:
                         geoModel.set_MeanOffsetA(dec_val)
-                    elif 'MeanOffsetB' in name:
+                    elif 'MLCMeanOffsetB' in name or 'MeanOffsetB' in name:
                         geoModel.set_MeanOffsetB(dec_val)
 
                     # ---- MLC Backlash ----
-                    elif 'MLCBacklashLeavesA/MLCBacklashLeaf' in name:
+                    elif 'MLCBacklashLeavesA/MLCBacklashLeaf' in name or '/MLCBacklashLeavesA/MLCBacklashLeaf' in name:
                         try:
-                            index = int(name.split('MLCBacklashLeaf')[1].split()[0])
-                            geoModel.set_MLCBacklashA(index, dec_val)
-                        except Exception:
+                            # Extract leaf number from patterns like:
+                            # "CollimationGroup/MLCBacklashGroup/MLCBacklashLeavesA/MLCBacklashLeaf11 [mm]"
+                            # or "MLCBacklashLeavesA/MLCBacklashLeaf11 [mm]"
+                            parts = name.split('MLCBacklashLeaf')
+                            if len(parts) > 1:
+                                # Get the part after "MLCBacklashLeaf" and extract the number
+                                leaf_part = parts[1].strip()
+                                # Remove brackets and extract number: "11 [mm]" -> "11"
+                                index_str = leaf_part.split()[0] if ' ' in leaf_part else leaf_part.split('[')[0]
+                                index = int(index_str)
+                                if 1 <= index <= 60:  # Validate leaf number range (1-60)
+                                    geoModel.set_MLCBacklashA(index, dec_val)
+                        except (ValueError, IndexError, Exception) as e:
+                            # Silently skip invalid entries
                             pass
-                    elif 'MLCBacklashLeavesB/MLCBacklashLeaf' in name:
+                    elif 'MLCBacklashLeavesB/MLCBacklashLeaf' in name or '/MLCBacklashLeavesB/MLCBacklashLeaf' in name:
                         try:
-                            index = int(name.split('MLCBacklashLeaf')[1].split()[0])
-                            geoModel.set_MLCBacklashB(index, dec_val)
-                        except Exception:
+                            # Extract leaf number from patterns like:
+                            # "CollimationGroup/MLCBacklashGroup/MLCBacklashLeavesB/MLCBacklashLeaf11 [mm]"
+                            # or "MLCBacklashLeavesB/MLCBacklashLeaf11 [mm]"
+                            parts = name.split('MLCBacklashLeaf')
+                            if len(parts) > 1:
+                                # Get the part after "MLCBacklashLeaf" and extract the number
+                                leaf_part = parts[1].strip()
+                                # Remove brackets and extract number: "11 [mm]" -> "11"
+                                index_str = leaf_part.split()[0] if ' ' in leaf_part else leaf_part.split('[')[0]
+                                index = int(index_str)
+                                if 1 <= index <= 60:  # Validate leaf number range (1-60)
+                                    geoModel.set_MLCBacklashB(index, dec_val)
+                        except (ValueError, IndexError, Exception) as e:
+                            # Silently skip invalid entries
                             pass
                     elif 'MLCBacklashMaxA' in name:
                         geoModel.set_MLCBacklashMaxA(dec_val)
@@ -319,86 +359,16 @@ class data_extractor:
                         geoModel.set_JawParallelismY2(dec_val)
 
         except FileNotFoundError:
-            print(f"CSV file not found: {path}")
+            logger.error(f"CSV file not found: {path}")
         except csv.Error as e:
-            print(f"Error parsing CSV file: {e}")
+            logger.error(f"Error parsing CSV file: {e}")
         except Exception as e:
-            print(f"Error during extraction: {e}")
+            logger.error(f"Error during extraction: {e}", exc_info=True)
 
     def testGeoModelExtraction(self, geoModel):
         """
         Test method for Geo model extraction.
         Runs geoModelExtraction() and prints all values using getters.
         """
-        print("\n--- Starting Geo Model Extraction Test ---")
         self.geoModelExtraction(geoModel)
-        print("--- Extraction Complete ---\n")
-
-        try:
-            print(f"Date: {geoModel.get_date()}")
-            print(f"Machine SN: {geoModel.get_machine_SN()}")
-            print(f"Is Baseline: {geoModel.get_baseline()}")
-            # IsoCenterGroup
-            print(f"IsoCenterSize: {geoModel.get_IsoCenterSize()}")
-            print(f"IsoCenterMVOffset: {geoModel.get_IsoCenterMVOffset()}")
-            print(f"IsoCenterKVOffset: {geoModel.get_IsoCenterKVOffset()}")
-
-            # BeamGroup
-            print(f"BeamOutputChange: {geoModel.get_relative_output()}")
-            print(f"BeamUniformityChange: {geoModel.get_relative_uniformity()}")
-            print(f"BeamCenterShift: {geoModel.get_center_shift()}")
-
-            # CollimationGroup
-            print(f"CollimationRotationOffset: {geoModel.get_CollimationRotationOffset()}")
-
-            # GantryGroup
-            print(f"GantryAbsolute: {geoModel.get_GantryAbsolute()}")
-            print(f"GantryRelative: {geoModel.get_GantryRelative()}")
-
-            # EnhancedCouchGroup
-            print(f"CouchMaxPositionError: {geoModel.get_CouchMaxPositionError()}")
-            print(f"CouchLat: {geoModel.get_CouchLat()}")
-            print(f"CouchLng: {geoModel.get_CouchLng()}")
-            print(f"CouchVrt: {geoModel.get_CouchVrt()}")
-            print(f"CouchRtnFine: {geoModel.get_CouchRtnFine()}")
-            print(f"CouchRtnLarge: {geoModel.get_CouchRtnLarge()}")
-            print(f"RotationInducedCouchShiftFullRange: {geoModel.get_RotationInducedCouchShiftFullRange()}")
-
-            # MLC Groups
-            print(f"MaxOffsetA: {geoModel.get_MaxOffsetA()}")
-            print(f"MaxOffsetB: {geoModel.get_MaxOffsetB()}")
-            print(f"MeanOffsetA: {geoModel.get_MeanOffsetA()}")
-            print(f"MeanOffsetB: {geoModel.get_MeanOffsetB()}")
-            print(f"MLCBacklashMaxA: {geoModel.get_MLCBacklashMaxA()}")
-            print(f"MLCBacklashMaxB: {geoModel.get_MLCBacklashMaxB()}")
-            print(f"MLCBacklashMeanA: {geoModel.get_MLCBacklashMeanA()}")
-            print(f"MLCBacklashMeanB: {geoModel.get_MLCBacklashMeanB()}")
-
-            # Individual MLC leaf/backlash arrays (if implemented)
-            # if hasattr(geoModel, "get_MLCLeafA"):
-            #     print(f"MLCLeafA: {geoModel.get_MLCLeafA()}")
-            # if hasattr(geoModel, "get_MLCLeafB"):
-            #     print(f"MLCLeafB: {geoModel.get_MLCLeafB()}")
-            for i in range(11, 51):
-                print(f"MLCLeafA (Index {i}): {geoModel.get_MLCLeafA(i)}")
-            for i in range(11, 51):
-                print(f"MLCLeafB (Index {i}): {geoModel.get_MLCLeafB(i)}")
-
-
-            # Jaw Group
-            print(f"JawX1: {geoModel.get_JawX1()}")
-            print(f"JawX2: {geoModel.get_JawX2()}")
-            print(f"JawY1: {geoModel.get_JawY1()}")
-            print(f"JawY2: {geoModel.get_JawY2()}")
-
-            # Jaw Parallelism
-            print(f"JawParallelismX1: {geoModel.get_JawParallelismX1()}")
-            print(f"JawParallelismX2: {geoModel.get_JawParallelismX2()}")
-            print(f"JawParallelismY1: {geoModel.get_JawParallelismY1()}")
-            print(f"JawParallelismY2: {geoModel.get_JawParallelismY2()}")
-
-        except Exception as e:
-            print(f"Error printing Geo model data: {e}")
-
-        print("\n--- End of Geo Model Test ---\n")
 

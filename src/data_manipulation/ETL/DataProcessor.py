@@ -1,4 +1,7 @@
 import os
+import logging
+from pathlib import Path
+from dotenv import load_dotenv
 from .data_extractor import data_extractor
 from .image_extractor import image_extractor
 from .Uploader import Uploader
@@ -7,6 +10,14 @@ from ..models.EBeamModel import EBeamModel
 from ..models.XBeamModel import XBeamModel
 from ..models.Geo6xfffModel import Geo6xfffModel
 from ..models.ImageModel import ImageModel
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file in project root
+project_root = Path(__file__).parent.parent.parent.parent
+env_path = project_root / '.env'
+load_dotenv(env_path)
 
 
 class DataProcessor:
@@ -20,6 +31,7 @@ class DataProcessor:
         """
         Initialize the DataProcessor with the directory path containing beam data.
         """
+        self.folder_path = path  # Store the folder path for uploads
         self.data_path = os.path.join(path, "Results.csv")
         self.image_path = os.path.join(path, "BeamProfileCheck.xim")
 
@@ -39,7 +51,7 @@ class DataProcessor:
         Sets path, type, date, and machine SN automatically.
         """
         model = model_class()
-        model.set_path(self.data_path)
+        model.set_path(self.folder_path)  # Use folder path instead of data_path for database
         model.set_type(beam_type)
         model.set_date(model._getDateFromPathName(self.data_path))
         model.set_machine_SN(model._getSNFromPathName(self.data_path))
@@ -75,6 +87,11 @@ class DataProcessor:
         Detects the beam type, initializes the model, 
         and sends it to the correct extractor method.
         """
+        
+        # Skip EnhancedMLCCheckTemplate6x - these have leaves we don't want to ingest
+        if "EnhancedMLCCheckTemplate6x" in self.data_path:
+            logger.info(f"Skipping EnhancedMLCCheckTemplate6x path (leaves not ingested): {self.data_path}")
+            return
 
         beam_map = {
             "6e": (EBeamModel, "6e"),
@@ -83,38 +100,60 @@ class DataProcessor:
             "16e": (EBeamModel, "16e"),
             "10x": (XBeamModel, "10x"),
             "15x": (XBeamModel, "15x"),
-            "6x": (Geo6xfffModel, "6x"),
+            "6x": (Geo6xfffModel, "6x"),  # Geometry checks use 6x as the beam type
         }
 
         for key, (model_class, beam_type) in beam_map.items():
             if key in self.data_path:
-                print(f"{beam_type.upper()} Beam detected")
+                # Special handling for 6x: use "6xFFF" only for BeamCheckTemplate6xFFF
+                if key == "6x":
+                    if "BeamCheckTemplate6xFFF" in self.data_path:
+                        beam_type = "6xFFF"
+                    # For other 6x templates (like GeometryCheckTemplate6xMVkVEnhancedCouch), use "6x"
+                
+                logger.info(f"{beam_type.upper()} Beam detected")
 
                 # Initialize the correct beam model (EBeam, XBeam, etc.)
                 beam = self._init_beam_model(model_class, beam_type)
 
                 if is_test:
-                    print("Running test extraction...")
+                    logger.info("Running test extraction...")
                     self.data_ex.extractTest(beam)
                 else:
-                    print("Running normal extraction...")
+                    logger.info("Running normal extraction...")
                     self.data_ex.extract(beam)
-                    print("Uploading to SupaBase...")
-                    # Set Up DataBase
-                    # Connect to database
+                    logger.info("Uploading to Supabase...")
+                    #Set Up DataBase
+                    # Connect to database using environment variables
+                    # Connect to database using credentials from .env file
                     connection_params = {
-                        'url': 'your-supabase-url',
-                        'key': 'your-supabase-key'
+                        'url': os.getenv('SUPABASE_URL'),
+                        'key': os.getenv('SUPABASE_KEY')
                     }
-                    self.up.connect(connection_params)
-                    # self.up.upload(beam)
-                    print("Uploading Complete")
+                    
+                    if not connection_params['url'] or not connection_params['key']:
+                        error_msg = "Error: SUPABASE_URL and SUPABASE_KEY must be set in .env file"
+                        logger.error(error_msg)
+                        return
+                    
+                    logger.info(f"Connecting to Supabase with URL: {connection_params['url'][:30]}...")
+                    if self.up.connect(connection_params):
+                        logger.info("Successfully connected to Supabase, uploading beam data...")
+                        upload_result = self.up.upload(beam)  # Actually upload the data
+                        if upload_result:
+                            logger.info("Upload completed successfully")
+                        else:
+                            logger.warning("Upload returned False - check for errors above")
+                    else:
+                        logger.error("Failed to connect to Supabase")
+                    
                     self.up.close()
+                    logger.info("Supabase connection closed")
 
                 
 
                 # --- Image Extraction for all beam types ---
-                print(f"Extracting image data for {beam_type} beam...")
+                logger.debug(f"Extracting image data for {beam_type} beam...")
                 self._init_beam_image(beam_type)
                 return
 

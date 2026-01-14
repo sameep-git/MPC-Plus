@@ -23,11 +23,15 @@ from src.data_manipulation.ETL.DataProcessor import DataProcessor
 load_dotenv()
 
 # Configure logging
+# Ensure logs directory exists
+logs_dir = Path(__file__).parent.parent.parent.parent / 'logs'
+logs_dir.mkdir(exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/folder_monitor.log'),
+        logging.FileHandler(logs_dir / 'folder_monitor.log'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -151,31 +155,49 @@ class FolderMonitor:
         Initialize the folder monitor
         
         Args:
+            idrive_path (str or list): Path(s) to the folder(s) to monitor.
+                                      Can be a single path string or a list of paths.
+        """
+        # Handle both single path and multiple paths
+        if isinstance(idrive_path, list):
+            self.idrive_paths = [os.path.abspath(p) for p in idrive_path]
+        else:
+            self.idrive_paths = [os.path.abspath(idrive_path)]
+        
+        self.observers = []  # List of observers for multiple paths
+        self.handler = iDriveFolderHandler()
             idrive_path (str): Path to the iDrive folder to monitor
             supabase_url (str, optional): Supabase URL for uploads
             supabase_key (str, optional): Supabase API key for uploads
-        """
-        self.idrive_path = os.path.abspath(idrive_path)
-        self.observer = Observer()
-        self.handler = iDriveFolderHandler(supabase_url, supabase_key)
+        
+#         self.idrive_path = os.path.abspath(idrive_path)
+#         self.observer = Observer()
+#         self.handler = iDriveFolderHandler(supabase_url, supabase_key)
         self.is_running = False
         
     def start_monitoring(self):
         """
-        Start monitoring the iDrive folder
+        Start monitoring the folder(s)
         """
         try:
-            # Ensure iDrive folder exists
-            if not os.path.exists(self.idrive_path):
-                logger.warning(f"iDrive folder does not exist: {self.idrive_path}")
-                logger.info(f"Creating iDrive folder: {self.idrive_path}")
-                os.makedirs(self.idrive_path, exist_ok=True)
+            # Ensure all folders exist
+            for path in self.idrive_paths:
+                if not os.path.exists(path):
+                    logger.warning(f"Folder does not exist: {path}")
+                    logger.info(f"Creating folder: {path}")
+                    os.makedirs(path, exist_ok=True)
             
-            logger.info(f"Starting folder monitoring on: {self.idrive_path}")
+            logger.info(f"Starting folder monitoring on {len(self.idrive_paths)} location(s):")
+            for path in self.idrive_paths:
+                logger.info(f"  - {path}")
             
-            # Set up observer
-            self.observer.schedule(self.handler, self.idrive_path, recursive=True)
-            self.observer.start()
+            # Set up observers for each path
+            for path in self.idrive_paths:
+                observer = Observer()
+                observer.schedule(self.handler, path, recursive=True)
+                observer.start()
+                self.observers.append(observer)
+            
             self.is_running = True
             
             logger.info("Folder monitoring started successfully")
@@ -195,12 +217,15 @@ class FolderMonitor:
     
     def stop_monitoring(self):
         """
-        Stop monitoring the folder
+        Stop monitoring the folder(s)
         """
         if self.is_running:
             logger.info("Stopping folder monitoring...")
-            self.observer.stop()
-            self.observer.join()
+            for observer in self.observers:
+                observer.stop()
+            for observer in self.observers:
+                observer.join()
+            self.observers = []
             self.is_running = False
             logger.info("Folder monitoring stopped")
     
@@ -209,18 +234,20 @@ class FolderMonitor:
         Scan for existing folders that might need processing
         """
         try:
-            logger.info("Scanning for existing folders in iDrive...")
+            logger.info(f"Scanning for existing folders in {len(self.idrive_paths)} location(s)...")
             
-            if not os.path.exists(self.idrive_path):
-                logger.info("iDrive folder does not exist yet")
-                return
-            
-            for item in os.listdir(self.idrive_path):
-                item_path = os.path.join(self.idrive_path, item)
-                if os.path.isdir(item_path):
-                    logger.info(f"Found existing folder: {item_path}")
-                    # Process existing folder if it hasn't been processed
-                    self.handler._process_new_folder(item_path)
+            for idrive_path in self.idrive_paths:
+                if not os.path.exists(idrive_path):
+                    logger.info(f"Folder does not exist yet: {idrive_path}")
+                    continue
+                
+                logger.info(f"Scanning: {idrive_path}")
+                for item in os.listdir(idrive_path):
+                    item_path = os.path.join(idrive_path, item)
+                    if os.path.isdir(item_path):
+                        logger.info(f"Found existing folder: {item_path}")
+                        # Process existing folder if it hasn't been processed
+                        self.handler._process_new_folder(item_path)
                     
         except Exception as e:
             logger.error(f"Error scanning existing folders: {str(e)}")
