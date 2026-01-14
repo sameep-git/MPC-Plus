@@ -473,7 +473,8 @@ class Uploader:
     # --- E-BEAM ---
     def eModelUpload(self, eBeam):
         """
-        Upload data for E-beam model to database.
+        Upload data for E-beam model to the single beam table.
+        Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
         """
         try:
             # Prepare data dictionary mapped to 'beams' table schema
@@ -500,7 +501,8 @@ class Uploader:
     # --- X-BEAM ---
     def xModelUpload(self, xBeam):
         """
-        Upload data for X-beam model to database.
+        Upload data for X-beam model to the single beam table.
+        Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
         """
         try:
             # Prepare data dictionary mapped to 'beams' table schema

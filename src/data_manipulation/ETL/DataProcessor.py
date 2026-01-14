@@ -38,9 +38,9 @@ class DataProcessor:
         self.data_ex = data_extractor()
         self.image_ex = image_extractor()
         
-        #Database Uploader
+        # Database Uploader
         self.up = Uploader()
-        #If ran as test, coded so that no database connection is made
+        # If ran as test, coded so that no database connection is made
 
     # -------------------------------------------------------------------------
     # Generic helper method for beams
@@ -57,6 +57,7 @@ class DataProcessor:
         model.set_machine_SN(model._getSNFromPathName(self.data_path))
         model.set_baseline(model._getIsBaselineFromPathName(self.data_path))
         return model
+    
     # -------------------------------------------------------------------------
     # Generic helper method for images
     # -------------------------------------------------------------------------
@@ -73,6 +74,7 @@ class DataProcessor:
         image.set_date(image._getDateFromPathName(self.image_path))
         image.set_machine_SN(image._getSNFromPathName(self.image_path))
         self.image_ex.get_image(image)
+        print("Image Name: ", image.get_ImageName())
         #return image  # optional if you want to keep a reference to the image object
 
 

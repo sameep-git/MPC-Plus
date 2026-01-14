@@ -13,10 +13,14 @@ import sys
 import time
 import logging
 from pathlib import Path
+from dotenv import load_dotenv
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from src.data_manipulation.ETL.DataProcessor import DataProcessor
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 # Ensure logs directory exists
@@ -38,9 +42,17 @@ class iDriveFolderHandler(FileSystemEventHandler):
     Event handler for monitoring iDrive folder changes
     """
     
-    def __init__(self):
-        """Initialize the handler"""
+    def __init__(self, supabase_url=None, supabase_key=None):
+        """
+        Initialize the handler
+        
+        Args:
+            supabase_url (str, optional): Supabase URL for uploads
+            supabase_key (str, optional): Supabase API key for uploads
+        """
         self.processed_folders = set()  # Track processed folders to avoid duplicates
+        self.supabase_url = supabase_url
+        self.supabase_key = supabase_key
         
     def on_created(self, event):
         """
@@ -89,7 +101,11 @@ class iDriveFolderHandler(FileSystemEventHandler):
             
             # Create DataProcessor instance and run processing
             logger.info(f"Processing folder: {folder_path}")
-            processor = DataProcessor(folder_path)
+            processor = DataProcessor(
+                folder_path, 
+                supabase_url=self.supabase_url,
+                supabase_key=self.supabase_key
+            )
             processor.Run()
             
             logger.info(f"Successfully processed folder: {folder_path}")
@@ -134,7 +150,7 @@ class FolderMonitor:
     Main folder monitoring service
     """
     
-    def __init__(self, idrive_path="iDrive"):
+    def __init__(self, idrive_path="iDrive", supabase_url=None, supabase_key=None):
         """
         Initialize the folder monitor
         
@@ -150,6 +166,13 @@ class FolderMonitor:
         
         self.observers = []  # List of observers for multiple paths
         self.handler = iDriveFolderHandler()
+            idrive_path (str): Path to the iDrive folder to monitor
+            supabase_url (str, optional): Supabase URL for uploads
+            supabase_key (str, optional): Supabase API key for uploads
+        
+#         self.idrive_path = os.path.abspath(idrive_path)
+#         self.observer = Observer()
+#         self.handler = iDriveFolderHandler(supabase_url, supabase_key)
         self.is_running = False
         
     def start_monitoring(self):
@@ -235,8 +258,21 @@ def main():
     """
     logger.info("=== MPC-Plus iDrive Folder Monitor Starting ===")
     
+    # Load Supabase credentials from environment variables (if available)
+    supabase_url = os.getenv('SUPABASE_URL')
+    supabase_key = os.getenv('SUPABASE_KEY')
+    
+    if supabase_url and supabase_key:
+        logger.info("✓ Supabase credentials loaded - uploads will be enabled")
+    else:
+        logger.info("⚠ No Supabase credentials found - uploads will be disabled")
+        logger.info("  Set SUPABASE_URL and SUPABASE_KEY in .env file to enable uploads")
+    
     # Create and configure monitor
-    monitor = FolderMonitor()
+    monitor = FolderMonitor(
+        supabase_url=supabase_url,
+        supabase_key=supabase_key
+    )
     
     # Scan for existing folders first
     #monitor.scan_existing_folders()
