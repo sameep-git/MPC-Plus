@@ -1,4 +1,4 @@
 watchdog==3.0.0
 pylinac==3.38.0
-supabase==2.0.0
+supabase==2.23.3
 python-dotenv==1.0.0
