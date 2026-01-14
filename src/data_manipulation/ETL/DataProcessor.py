@@ -14,12 +14,9 @@ from ..models.ImageModel import ImageModel
 # Set up logger for this module
 logger = logging.getLogger(__name__)
 
-# Load environment variables from .env directory in project root
+# Load environment variables from .env file in project root
 project_root = Path(__file__).parent.parent.parent.parent
-# Try .env/apicreds.txt first (existing structure), then fall back to .env file
-env_path = project_root / '.env' / 'apicreds.txt'
-if not env_path.exists():
-    env_path = project_root / '.env'
+env_path = project_root / '.env'
 load_dotenv(env_path)
 
 

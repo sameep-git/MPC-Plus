@@ -1,8 +1,19 @@
 using Api.Extensions;
 using DotNetEnv;
 
-// Load environment variables from .env file
-Env.Load();
+// Load environment variables from .env file in project root
+// Navigate up from bin/Debug/net9.0/ to project root (typically 5 levels up)
+var rootDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+var envPath = Path.Combine(rootDir, ".env");
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+}
+else
+{
+    // Fallback: try loading from current directory if root .env not found
+    Env.Load();
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
