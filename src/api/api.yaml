@@ -13,319 +13,7 @@ servers:
   - url: https://staging-api.example.com/v1
     description: Staging server
 
-tags:
-  - name: Beam
-    description: Operations related to beam data
-  - name: Machines
-    description: Operations related to machines
-  - name: Results
-    description: Operations related to results
-  - name: Baselines
-    description: Operations related to baselines
-  - name: Thresholds
-    description: Operations related to thresholds
-  - name: Updates
-    description: Operations related to updates
-  - name: Authentication
-    description: Authentication operations
-  - name: Image
-    description: Image operations
-
 paths:
-  /beams:
-    get:
-      tags:
-        - Beam
-      summary: Get beam data by type, date, and machine
-      description: Retrieves beam data filtered by various parameters
-      parameters:
-        - name: type
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Type of beam
-        - name: machine-id
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Machine identifier
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-          description: Specific date for beam data
-        - name: start-date
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-          description: Start date for date range
-        - name: end-date
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-          description: End date for date range
-        - name: range
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [week, month, quarter]
-          description: Predefined time range
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Beam'
-        '400':
-          description: Bad request
-        '404':
-          description: Not found
-    
-    post:
-      tags:
-        - Beam
-      summary: Add a note to a beam
-      description: Creates or updates a note for a specific beam
-      parameters:
-        - name: id
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Beam identifier
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                note:
-                  type: string
-                  description: Note to add to the beam
-      responses:
-        '201':
-          description: Note added successfully
-        '400':
-          description: Bad request
-    
-    put:
-      tags:
-        - Beam
-      summary: Update a note for a beam
-      description: Updates an existing note for a specific beam
-      parameters:
-        - name: id
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Beam identifier
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                note:
-                  type: string
-                  description: Updated note content
-      responses:
-        '200':
-          description: Note updated successfully
-        '400':
-          description: Bad request
-        '404':
-          description: Beam not found
-
-  /beams/{beamId}:
-    get:
-      tags:
-        - Beam
-      summary: Get specific beam by ID
-      description: Retrieves a single beam by its identifier
-      parameters:
-        - name: beamId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Unique beam identifier
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Beam'
-        '404':
-          description: Beam not found
-
-  /beams/types:
-    get:
-      tags:
-        - Beam
-      summary: Get all beam types
-      description: Returns a list of all available beam types
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                example: ["6e", "9e", "12e", "16e", "10x", "15x", "6xff"]
-
-  /machines:
-    get:
-      tags:
-        - Machines
-      summary: Get all machines
-      description: Returns a list of all machines
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Machine'
-    
-    post:
-      tags:
-        - Machines
-      summary: Add a new machine
-      description: Creates a new machine entry
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Machine'
-      responses:
-        '201':
-          description: Machine created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Machine'
-        '400':
-          description: Bad request
-
-  /machines/{machineId}:
-    put:
-      tags:
-        - Machines
-      summary: Update a machine
-      description: Updates machine information (e.g., location)
-      parameters:
-        - name: machineId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Machine identifier
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Machine'
-      responses:
-        '200':
-          description: Machine updated successfully
-        '400':
-          description: Bad request
-        '404':
-          description: Machine not found
-    
-    delete:
-      tags:
-        - Machines
-      summary: Delete a machine
-      description: Removes a machine from the system
-      parameters:
-        - name: machineId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Machine identifier
-      responses:
-        '204':
-          description: Machine deleted successfully
-        '404':
-          description: Machine not found
-
-  /results:
-    get:
-      tags:
-        - Results
-      summary: Get monthly calendar view of check results
-      description: Returns a calendar view showing beam checks and geometry checks for a specific month, year, and machine with pass/warning/fail status
-      parameters:
-        - name: month
-          in: query
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 12
-          description: Month (1-12)
-        - name: year
-          in: query
-          required: true
-          schema:
-            type: integer
-          description: Year
-        - name: machineId
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Machine identifier
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MonthlyResults'
-        '400':
-          description: Bad request
-
-  /baselines/all:
-    get:
-      tags:
-        - Baselines
-      summary: Get all baselines
-      description: Returns all baselines for different metrics
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Baseline'
-
   /baseline:
     get:
       tags:
@@ -608,7 +296,7 @@ paths:
       summary: Get geometry checks
       description: Retrieves geometry check data, optionally filtered by machine, type, and date range
       parameters:
-        - name: machineId
+        - name: machine-id
           in: query
           required: false
           schema:
@@ -627,14 +315,14 @@ paths:
             type: string
             format: date
           description: Specific date for geometry check
-        - name: startDate
+        - name: start-date
           in: query
           required: false
           schema:
             type: string
             format: date
           description: Start date for date range
-        - name: endDate
+        - name: end-date
           in: query
           required: false
           schema:
@@ -751,6 +439,7 @@ components:
       properties:
         id:
           type: string
+          format: uuid
           description: Unique identifier for the beam
         type:
           type: string
@@ -762,29 +451,37 @@ components:
         path:
           type: string
           description: File path to beam data
-        relUniformity:
+        rel_uniformity:
           type: number
           format: double
           description: Relative uniformity value
-        relOutput:
+        rel_output:
           type: number
           format: double
           description: Relative output value
-        centerShift:
+        center_shift:
           type: number
           format: double
           description: Center shift value (for X-Beam only)
-        machineId:
+        machine_id:
           type: string
           description: Associated machine identifier
         note:
           type: string
           description: Notes about the beam
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
       required:
         - id
         - type
         - date
-        - machineId
+        - machine_id
 
     Machine:
       type: object
@@ -801,6 +498,14 @@ components:
         type:
           type: string
           description: Type of machine
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
       required:
         - id
         - location
@@ -812,6 +517,7 @@ components:
       properties:
         id:
           type: string
+          format: uuid
           description: Unique identifier for the result
         month:
           type: integer
@@ -819,12 +525,23 @@ components:
         year:
           type: integer
           description: Year of the result
-        beamCheck:
+        machine_id:
+          type: string
+          description: Machine identifier
+        beam_check:
           type: object
           description: Beam check data
         status:
           type: string
           description: Status of the check
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
 
     MonthlyResults:
       type: object
@@ -837,7 +554,7 @@ components:
         year:
           type: integer
           description: Year queried
-        machineId:
+        machine_id:
           type: string
           description: Machine identifier
         checks:
@@ -848,7 +565,7 @@ components:
       required:
         - month
         - year
-        - machineId
+        - machine_id
         - checks
 
     DayCheckStatus:
@@ -878,6 +595,7 @@ components:
       properties:
         id:
           type: string
+          format: uuid
           description: Unique identifier for the geometry check
         type:
           type: string
@@ -886,64 +604,203 @@ components:
           type: string
           format: date
           description: Date of the geometry check
-        machineId:
+        machine_id:
           type: string
           description: Associated machine identifier
         path:
           type: string
           description: File path to the geometry check data
-        isoCenterSize:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the geometry check
+        iso_center_size:
           type: number
           format: double
           description: Iso center size measurement
-        isoCenterMVOffset:
+        iso_center_mv_offset:
           type: number
           format: double
           description: Iso center MV offset measurement
-        isoCenterKVOffset:
+        iso_center_kv_offset:
           type: number
           format: double
           description: Iso center KV offset measurement
-        relativeOutput:
+        relative_output:
           type: number
           format: double
           description: Relative output value
-        relativeUniformity:
+        relative_uniformity:
           type: number
           format: double
           description: Relative uniformity value
-        centerShift:
+        center_shift:
           type: number
           format: double
           description: Center shift value
-        collimationRotationOffset:
+        collimation_rotation_offset:
           type: number
           format: double
           description: Collimation rotation offset measurement
-        gantryAbsolute:
+        gantry_absolute:
           type: number
           format: double
           description: Gantry absolute measurement
+        gantry_relative:
+          type: number
+          format: double
+          description: Gantry relative measurement
+        couch_max_position_error:
+          type: number
+          format: double
+          description: Maximum couch position error
+        couch_lat:
+          type: number
+          format: double
+          description: Couch lateral measurement
+        couch_lng:
+          type: number
+          format: double
+          description: Couch longitudinal measurement
+        couch_vrt:
+          type: number
+          format: double
+          description: Couch vertical measurement
+        couch_rtn_fine:
+          type: number
+          format: double
+          description: Couch rotation fine measurement
+        couch_rtn_large:
+          type: number
+          format: double
+          description: Couch rotation large measurement
+        rotation_induced_couch_shift_full_range:
+          type: number
+          format: double
+          description: Rotation induced couch shift full range
+        max_offset_a:
+          type: number
+          format: double
+          description: Maximum offset for MLC bank A
+        max_offset_b:
+          type: number
+          format: double
+          description: Maximum offset for MLC bank B
+        mean_offset_a:
+          type: number
+          format: double
+          description: Mean offset for MLC bank A
+        mean_offset_b:
+          type: number
+          format: double
+          description: Mean offset for MLC bank B
+        mlc_backlash_max_a:
+          type: number
+          format: double
+          description: Maximum backlash for MLC bank A
+        mlc_backlash_max_b:
+          type: number
+          format: double
+          description: Maximum backlash for MLC bank B
+        mlc_backlash_mean_a:
+          type: number
+          format: double
+          description: Mean backlash for MLC bank A
+        mlc_backlash_mean_b:
+          type: number
+          format: double
+          description: Mean backlash for MLC bank B
+        jaw_x1:
+          type: number
+          format: double
+          description: Jaw X1 measurement
+        jaw_x2:
+          type: number
+          format: double
+          description: Jaw X2 measurement
+        jaw_y1:
+          type: number
+          format: double
+          description: Jaw Y1 measurement
+        jaw_y2:
+          type: number
+          format: double
+          description: Jaw Y2 measurement
+        jaw_parallelism_x1:
+          type: number
+          format: double
+          description: Jaw parallelism X1 measurement
+        jaw_parallelism_x2:
+          type: number
+          format: double
+          description: Jaw parallelism X2 measurement
+        jaw_parallelism_y1:
+          type: number
+          format: double
+          description: Jaw parallelism Y1 measurement
+        jaw_parallelism_y2:
+          type: number
+          format: double
+          description: Jaw parallelism Y2 measurement
+        mlc_leaves_a:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: MLC leaves bank A measurements keyed by leaf label (Leaf11-Leaf50)
+        mlc_leaves_b:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: MLC leaves bank B measurements keyed by leaf label (Leaf11-Leaf50)
+        mlc_backlash_a:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: MLC backlash bank A measurements keyed by leaf label (Leaf11-Leaf50)
+        mlc_backlash_b:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: MLC backlash bank B measurements keyed by leaf label (Leaf11-Leaf50)
+        note:
+          type: string
+          description: Notes about the geometry check
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
       required:
         - id
         - type
         - date
-        - machineId
+        - machine_id
 
     Baseline:
       type: object
       properties:
-        machineId:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        machine_id:
           type: string
           description: Machine identifier
-        checkType:
+        check_type:
           type: string
           enum: [geometry, beam]
           description: Type of check
-        beamVariant:
+        beam_variant:
           type: string
           description: Beam variant
-        metricType:
+        metric_type:
           type: string
           description: Type of metric (e.g., all beam type metrics)
         date:
@@ -953,49 +810,72 @@ components:
         value:
           type: number
           description: Baseline value
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
       required:
-        - machineId
-        - checkType
-        - metricType
+        - id
+        - machine_id
+        - check_type
+        - metric_type
         - date
 
     Threshold:
       type: object
       properties:
-        machineId:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        machine_id:
           type: string
           description: Machine identifier
-        checkType:
+        check_type:
           type: string
           enum: [geometry, beam]
           description: Type of check
-        beamVariant:
+        beam_variant:
           type: string
           description: Beam variant
-        metricType:
+        metric_type:
           type: string
           enum: [output_change, uniformity_change, center_shift]
           description: Type of metric
-        lastUpdated:
-          type: string
-          format: date-time
-          description: Last update timestamp
         value:
           type: number
           description: Threshold value
+        last_updated:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
       required:
-        - machineId
-        - checkType
-        - metricType
-        - lastUpdated
+        - id
+        - machine_id
+        - check_type
+        - metric_type
+        - last_updated
 
     Update:
       type: object
       properties:
         id:
           type: string
+          format: uuid
           description: Unique identifier for the update
-        machine:
+        machine_id:
           type: string
           description: Associated machine
         info:
@@ -1004,11 +884,111 @@ components:
         type:
           type: string
           description: Type of update
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
       required:
         - id
-        - machine
+        - machine_id
         - info
         - type
+
+    GeoCheckMlcLeavesA:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique record identifier
+        geocheck_id:
+          type: string
+          format: uuid
+          description: Related geometry check id
+        leaf_number:
+          type: integer
+          description: Leaf number (int4)
+        leaf_value:
+          type: number
+          format: double
+          description: Leaf value
+      required:
+        - id
+        - geocheck_id
+        - leaf_number
+
+    GeoCheckMlcLeavesB:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique record identifier
+        geocheck_id:
+          type: string
+          format: uuid
+          description: Related geometry check id
+        leaf_number:
+          type: integer
+          description: Leaf number (int4)
+        leaf_value:
+          type: number
+          format: double
+          description: Leaf value
+      required:
+        - id
+        - geocheck_id
+        - leaf_number
+
+    GeoCheckMlcBacklashA:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique record identifier
+        geocheck_id:
+          type: string
+          format: uuid
+          description: Related geometry check id
+        leaf_number:
+          type: integer
+          description: Leaf number (int4)
+        backlash_value:
+          type: number
+          format: double
+          description: Backlash value
+      required:
+        - id
+        - geocheck_id
+        - leaf_number
+
+    GeoCheckMlcBacklashB:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique record identifier
+        geocheck_id:
+          type: string
+          format: uuid
+          description: Related geometry check id
+        leaf_number:
+          type: integer
+          description: Leaf number (int4)
+        backlash_value:
+          type: number
+          format: double
+          description: Backlash value
+      required:
+        - id
+        - geocheck_id
+        - leaf_number
 
   securitySchemes:
     bearerAuth:
