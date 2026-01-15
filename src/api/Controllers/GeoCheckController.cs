@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/geochecks")]
 public class GeoCheckController : ControllerBase
 {
     private readonly IGeoCheckRepository _repository;

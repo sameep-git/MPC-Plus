@@ -29,7 +29,7 @@ public class SupabaseGeoCheckRepository : IGeoCheckRepository
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            var response = await _client.From<GeoCheckEntity>().Get();
+            var response = await _client.From<GeoCheckFullEntity>().Get();
             var geoChecks = response.Models.Select(e => e.ToModel()).ToList();
 
             if (!string.IsNullOrWhiteSpace(machineId))
@@ -57,8 +57,8 @@ public class SupabaseGeoCheckRepository : IGeoCheckRepository
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            var response = await _client.From<GeoCheckEntity>()
-                .Filter(nameof(GeoCheckEntity.Id), Supabase.Postgrest.Constants.Operator.Equals, id)
+            var response = await _client.From<GeoCheckFullEntity>()
+                .Filter(nameof(GeoCheckFullEntity.Id), Supabase.Postgrest.Constants.Operator.Equals, id)
                 .Get();
             return response.Models.FirstOrDefault()?.ToModel();
         }
