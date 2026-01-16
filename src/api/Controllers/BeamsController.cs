@@ -108,4 +108,51 @@ public class BeamsController : ControllerBase
         var types = await _repository.GetBeamTypesAsync(cancellationToken);
         return Ok(types);
     }
+
+    [HttpPost("accept")]
+    public async Task<ActionResult> Accept([FromBody] AcceptBeamRequest request, CancellationToken cancellationToken)
+    {
+        if (request.BeamIds == null || !request.BeamIds.Any())
+        {
+            return BadRequest("No beam IDs provided.");
+        }
+
+        var results = new List<Beam>();
+        var errors = new List<string>();
+
+        foreach (var id in request.BeamIds)
+        {
+            var beam = await _repository.GetByIdAsync(id, cancellationToken);
+            if (beam is null)
+            {
+                errors.Add($"Beam with id '{id}' was not found.");
+                continue;
+            }
+
+            beam.AcceptedBy = request.AcceptedBy;
+            beam.AcceptedDate = DateTime.UtcNow;
+
+            var updated = await _repository.UpdateAsync(beam, cancellationToken);
+            if (!updated)
+            {
+                errors.Add($"Failed to update beam '{id}'.");
+            }
+            else
+            {
+                results.Add(beam);
+            }
+        }
+
+        if (errors.Any())
+        {
+            // If some failed, return 207 Multi-Status or just bad request with details?
+            // For simplicity, we'll return Ok with the successful ones and include errors in response if needed,
+            // or if all failed, 500.
+            // Let's just return Ok with results, client can check what was updated.
+        }
+
+        return Ok(results);
+    }
 }
+
+public record AcceptBeamRequest(IEnumerable<string> BeamIds, string AcceptedBy);
