@@ -789,6 +789,15 @@ components:
         Note:
           type: string
           description: Notes about the beam
+        AcceptedBy:
+          type: string
+          nullable: true
+          description: Name of the person who accepted/signed off the beam check
+        AcceptedDate:
+          type: string
+          format: date
+          nullable: true
+          description: Date when the beam check was accepted/signed off
       required:
         - Id
         - Type
