@@ -37,6 +37,12 @@ public class BeamEntity : BaseModel
     [Column("note")]
     public string? Note { get; set; }
 
+    [Column("accepted_by")]
+    public string? AcceptedBy { get; set; }
+
+    [Column("accepted_date")]
+    public DateTime? AcceptedDate { get; set; }
+
     /// <summary>
     /// Converts this entity to a domain model.
     /// </summary>
@@ -51,7 +57,9 @@ public class BeamEntity : BaseModel
             RelOutput = RelOutput,
             CenterShift = CenterShift,
             MachineId = MachineId,
-            Note = Note
+            Note = Note,
+            AcceptedBy = AcceptedBy,
+            AcceptedDate = AcceptedDate
         };
 
     /// <summary>
@@ -68,6 +76,8 @@ public class BeamEntity : BaseModel
             RelOutput = beam.RelOutput,
             CenterShift = beam.CenterShift,
             MachineId = beam.MachineId,
-            Note = beam.Note
+            Note = beam.Note,
+            AcceptedBy = beam.AcceptedBy,
+            AcceptedDate = beam.AcceptedDate
         };
 }

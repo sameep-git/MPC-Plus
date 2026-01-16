@@ -55,7 +55,7 @@ public class SupabaseBeamRepository : IBeamRepository
         try
         {
             var response = await _client.From<BeamEntity>()
-                .Filter(nameof(BeamEntity.Id), Supabase.Postgrest.Constants.Operator.Equals, id).Get();
+                .Filter("id", Supabase.Postgrest.Constants.Operator.Equals, id).Get();
             return response.Models.FirstOrDefault()?.ToModel();
         }
         catch (Exception ex)
@@ -86,7 +86,7 @@ public class SupabaseBeamRepository : IBeamRepository
         try
         {
             var response = await _client.From<BeamEntity>()
-                .Filter(nameof(BeamEntity.Id), Supabase.Postgrest.Constants.Operator.Equals, beam.Id)
+                .Filter("id", Supabase.Postgrest.Constants.Operator.Equals, beam.Id)
                 .Update(BeamEntity.FromModel(beam));
             return response.Models.Any();
         }
@@ -103,7 +103,7 @@ public class SupabaseBeamRepository : IBeamRepository
         try
         {
             await _client.From<BeamEntity>()
-                .Filter(nameof(BeamEntity.Id), Supabase.Postgrest.Constants.Operator.Equals, id)
+                .Filter("id", Supabase.Postgrest.Constants.Operator.Equals, id)
                 .Delete();
             return true;
         }

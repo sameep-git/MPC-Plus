@@ -428,6 +428,40 @@ paths:
         '404':
           description: Beam not found
 
+  /beams/accept:
+    post:
+      tags:
+        - Beams
+      summary: Accept multiple beams
+      description: Marks multiple beams as accepted by a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                beamIds:
+                  type: array
+                  items:
+                    type: string
+                acceptedBy:
+                  type: string
+              required:
+                - beamIds
+                - acceptedBy
+      responses:
+        '200':
+          description: Beams accepted successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Beam'
+        '400':
+          description: Bad request
+
   /beams/types:
     get:
       tags:
