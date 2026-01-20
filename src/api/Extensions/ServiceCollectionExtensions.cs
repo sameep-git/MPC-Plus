@@ -190,5 +190,55 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    public static IServiceCollection AddThresholdDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        var databaseProvider = configuration[$"{DatabaseOptions.SectionName}:Provider"] ?? new DatabaseOptions().Provider;
+
+        switch (databaseProvider.ToLowerInvariant())
+        {
+            case "supabase":
+                // In case we need in-memory fallback later, add it here. For now, just Supabase.
+                services.AddSupabaseThresholdDataAccess(configuration);
+                break;
+            default:
+                // Fallback or throw if strictly required. Existing patterns suggest throwing or falling back.
+                // We'll throw if not supported for now as we didn't make an InMemory repo yet.
+                services.AddSupabaseThresholdDataAccess(configuration); 
+                break;
+        }
+
+        return services;
+    }
+
+    private static IServiceCollection AddSupabaseThresholdDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<SupabaseSettings>(configuration.GetSection(SupabaseSettings.SectionName));
+
+        services.AddScoped<IThresholdRepository>(provider =>
+        {
+            var settings = provider.GetRequiredService<IOptions<SupabaseSettings>>().Value;
+            var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+            if (string.IsNullOrWhiteSpace(settings.Url) || string.IsNullOrWhiteSpace(settings.Key))
+            {
+                 // If no credentials, we can't really work. 
+                 throw new InvalidOperationException("Supabase credentials required for Threshold repository");
+            }
+
+            var options = new SupabaseOptions
+            {
+                AutoConnectRealtime = false
+            };
+
+            var client = new Client(settings.Url, settings.Key, options);
+            client.InitializeAsync().GetAwaiter().GetResult();
+
+            var logger = loggerFactory.CreateLogger<SupabaseThresholdRepository>();
+            return new SupabaseThresholdRepository(client, logger);
+        });
+
+        return services;
+    }
 }
 

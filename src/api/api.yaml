@@ -47,15 +47,15 @@ paths:
             type: string
           description: Type of metric
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Baseline'
-        '404':
+                $ref: "#/components/schemas/Baseline"
+        "404":
           description: Baseline not found
-    
+
     put:
       tags:
         - Baselines
@@ -99,13 +99,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Baseline'
+              $ref: "#/components/schemas/Baseline"
       responses:
-        '200':
+        "200":
           description: Baseline updated successfully
-        '400':
+        "400":
           description: Bad request
-        '404':
+        "404":
           description: Baseline not found
 
   /thresholds/all:
@@ -115,14 +115,14 @@ paths:
       summary: Get all thresholds
       description: Returns all threshold configurations
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Threshold'
+                  $ref: "#/components/schemas/Threshold"
 
   /thresholds:
     get:
@@ -158,14 +158,37 @@ paths:
             enum: [output_change, uniformity_change, center_shift]
           description: Type of metric
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Threshold'
-        '404':
+                $ref: "#/components/schemas/Threshold"
+        "404":
           description: Threshold not found
+
+    post:
+      tags:
+        - Thresholds
+      summary: Create or update a threshold
+      description: Creates a new threshold or updates an existing one
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Threshold"
+      responses:
+        "200":
+          description: Threshold saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Threshold"
+        "400":
+          description: Bad request
+        "500":
+          description: Server error
 
   /updates:
     get:
@@ -174,15 +197,15 @@ paths:
       summary: Get all updates
       description: Returns a list of all updates
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Update'
-    
+                  $ref: "#/components/schemas/Update"
+
     post:
       tags:
         - Updates
@@ -193,13 +216,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Update'
+              $ref: "#/components/schemas/Update"
       responses:
-        '201':
+        "201":
           description: Update created successfully
-        '400':
+        "400":
           description: Bad request
-    
+
     put:
       tags:
         - Updates
@@ -210,15 +233,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Update'
+              $ref: "#/components/schemas/Update"
       responses:
-        '200':
+        "200":
           description: Update modified successfully
-        '400':
+        "400":
           description: Bad request
-        '404':
+        "404":
           description: Update not found
-    
+
     delete:
       tags:
         - Updates
@@ -232,9 +255,9 @@ paths:
             type: string
           description: Update identifier
       responses:
-        '204':
+        "204":
           description: Update deleted successfully
-        '404':
+        "404":
           description: Update not found
 
   /login:
@@ -259,7 +282,7 @@ paths:
                 - username
                 - password
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
@@ -270,7 +293,7 @@ paths:
                     type: string
                   user:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
 
   /image:
@@ -280,7 +303,7 @@ paths:
       summary: Get image
       description: Retrieves image data
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             image/*:
@@ -329,14 +352,14 @@ paths:
             format: date
           description: End date for date range
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Beam'
+                  $ref: "#/components/schemas/Beam"
 
     post:
       tags:
@@ -348,17 +371,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Beam'
+              $ref: "#/components/schemas/Beam"
       responses:
-        '201':
+        "201":
           description: Beam created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Beam'
-        '400':
+                $ref: "#/components/schemas/Beam"
+        "400":
           description: Bad request
-        '409':
+        "409":
           description: Conflict - beam already exists
 
   /beams/{id}:
@@ -375,13 +398,13 @@ paths:
             type: string
           description: Unique beam identifier
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Beam'
-        '404':
+                $ref: "#/components/schemas/Beam"
+        "404":
           description: Beam not found
 
     put:
@@ -401,13 +424,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Beam'
+              $ref: "#/components/schemas/Beam"
       responses:
-        '204':
+        "204":
           description: Beam updated successfully
-        '400':
+        "400":
           description: Bad request - ID mismatch
-        '404':
+        "404":
           description: Beam not found
 
     delete:
@@ -423,9 +446,9 @@ paths:
             type: string
           description: Unique beam identifier
       responses:
-        '204':
+        "204":
           description: Beam deleted successfully
-        '404':
+        "404":
           description: Beam not found
 
   /beams/accept:
@@ -451,15 +474,15 @@ paths:
                 - beamIds
                 - acceptedBy
       responses:
-        '200':
+        "200":
           description: Beams accepted successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Beam'
-        '400':
+                  $ref: "#/components/schemas/Beam"
+        "400":
           description: Bad request
 
   /beams/types:
@@ -469,7 +492,7 @@ paths:
       summary: Get beam types
       description: Returns a list of all distinct beam types
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -485,14 +508,14 @@ paths:
       summary: Get all machines
       description: Returns a list of all machines
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Machine'
+                  $ref: "#/components/schemas/Machine"
 
     post:
       tags:
@@ -504,15 +527,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Machine'
+              $ref: "#/components/schemas/Machine"
       responses:
-        '201':
+        "201":
           description: Machine created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Machine'
-        '409':
+                $ref: "#/components/schemas/Machine"
+        "409":
           description: Conflict - machine already exists
 
   /machines/{id}:
@@ -529,13 +552,13 @@ paths:
             type: string
           description: Unique machine identifier
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Machine'
-        '404':
+                $ref: "#/components/schemas/Machine"
+        "404":
           description: Machine not found
 
     put:
@@ -555,13 +578,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Machine'
+              $ref: "#/components/schemas/Machine"
       responses:
-        '204':
+        "204":
           description: Machine updated successfully
-        '400':
+        "400":
           description: Bad request - ID mismatch
-        '404':
+        "404":
           description: Machine not found
 
     delete:
@@ -577,9 +600,9 @@ paths:
             type: string
           description: Unique machine identifier
       responses:
-        '204':
+        "204":
           description: Machine deleted successfully
-        '404':
+        "404":
           description: Machine not found
 
   /results:
@@ -612,13 +635,13 @@ paths:
             type: string
           description: Machine identifier
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MonthlyResults'
-        '400':
+                $ref: "#/components/schemas/MonthlyResults"
+        "400":
           description: Bad request - invalid parameters
 
   /updates/{id}:
@@ -635,13 +658,13 @@ paths:
             type: string
           description: Unique update identifier
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Update'
-        '404':
+                $ref: "#/components/schemas/Update"
+        "404":
           description: Update not found
 
   /geochecks:
@@ -685,14 +708,14 @@ paths:
             format: date
           description: End date for date range
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GeoCheck'
+                  $ref: "#/components/schemas/GeoCheck"
 
     post:
       tags:
@@ -704,15 +727,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GeoCheck'
+              $ref: "#/components/schemas/GeoCheck"
       responses:
-        '201':
+        "201":
           description: Geometry check created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GeoCheck'
-        '400':
+                $ref: "#/components/schemas/GeoCheck"
+        "400":
           description: Bad request
 
   /geochecks/{id}:
@@ -729,13 +752,13 @@ paths:
             type: string
           description: Unique geometry check identifier
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GeoCheck'
-        '404':
+                $ref: "#/components/schemas/GeoCheck"
+        "404":
           description: Geometry check not found
 
     put:
@@ -755,17 +778,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GeoCheck'
+              $ref: "#/components/schemas/GeoCheck"
       responses:
-        '200':
+        "200":
           description: Geometry check updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GeoCheck'
-        '400':
+                $ref: "#/components/schemas/GeoCheck"
+        "400":
           description: Bad request
-        '404':
+        "404":
           description: Geometry check not found
 
     delete:
@@ -781,11 +804,10 @@ paths:
             type: string
           description: Unique geometry check identifier
       responses:
-        '204':
+        "204":
           description: Geometry check deleted successfully
-        '404':
+        "404":
           description: Geometry check not found
-
 
 components:
   schemas:
@@ -898,7 +920,7 @@ components:
         Checks:
           type: array
           items:
-            $ref: '#/components/schemas/DayCheckStatus'
+            $ref: "#/components/schemas/DayCheckStatus"
           description: Daily check statuses for the month
       required:
         - Month
