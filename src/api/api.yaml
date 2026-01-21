@@ -468,11 +468,11 @@ paths:
                   type: array
                   items:
                     type: string
-                acceptedBy:
+                approvedBy:
                   type: string
               required:
                 - beamIds
-                - acceptedBy
+                - approvedBy
       responses:
         "200":
           description: Beams accepted successfully
