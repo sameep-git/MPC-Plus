@@ -224,6 +224,78 @@ class Uploader:
         else:
             raise TypeError(f"Unsupported model type: {type(model).__name__}")
 
+    def _upload_baseline_metrics(self, model, check_type: str):
+        """
+        Upload baseline data as individual metric records to the baseline table.
+        Creates one record per metric (relUniformity, relOutput, centerShift if applicable).
+        
+        Args:
+            model: The beam model (EBeam, XBeam, or GeoModel)
+            check_type: "beam" for EBeam/XBeam, "geometry" for GeoModel
+        
+        Returns:
+            bool: True if all metrics uploaded successfully, False otherwise
+        """
+        try:
+            machine_id = model.get_machine_SN()
+            beam_variant = model.get_type()  # e.g., "6e", "15x", "6x"
+            date = model.get_date()
+            
+            # List of metrics to upload
+            metrics = []
+            
+            # Add relUniformity
+            rel_uniformity = model.get_relative_uniformity()
+            if rel_uniformity is not None:
+                metrics.append({
+                    'machine_id': machine_id,
+                    'check_type': check_type,
+                    'beam_variant': beam_variant,
+                    'metric_type': 'relUniformity',
+                    'date': date,
+                    'value': rel_uniformity
+                })
+            
+            # Add relOutput
+            rel_output = model.get_relative_output()
+            if rel_output is not None:
+                metrics.append({
+                    'machine_id': machine_id,
+                    'check_type': check_type,
+                    'beam_variant': beam_variant,
+                    'metric_type': 'relOutput',
+                    'date': date,
+                    'value': rel_output
+                })
+            
+            # Add centerShift (only for XBeam and GeoModel, not EBeam)
+            if hasattr(model, 'get_center_shift'):
+                center_shift = model.get_center_shift()
+                if center_shift is not None:
+                    metrics.append({
+                        'machine_id': machine_id,
+                        'check_type': check_type,
+                        'beam_variant': beam_variant,
+                        'metric_type': 'centerShift',
+                        'date': date,
+                        'value': center_shift
+                    })
+            
+            # Upload each metric record
+            success_count = 0
+            for metric_data in metrics:
+                if self.db_adapter.upload_beam_data('baseline', metric_data):
+                    success_count += 1
+                else:
+                    print(f"Failed to upload baseline metric: {metric_data['metric_type']}")
+            
+            print(f"Uploaded {success_count}/{len(metrics)} baseline metric records")
+            return success_count == len(metrics) and len(metrics) > 0
+            
+        except Exception as e:
+            print(f"Error uploading baseline metrics: {e}")
+            return False
+
     def uploadTest(self, model):
         """
         Automatically calls the correct upload method
@@ -252,25 +324,30 @@ class Uploader:
     # --- E-BEAM ---
     def eModelUpload(self, eBeam):
         """
-        Upload data for E-beam model to the single beam table.
+        Upload data for E-beam model to the single beam table or baseline table.
         Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
+        
+        For baselines: Uploads individual metric records to baseline table.
+        For regular beams: Uploads single record to beam table.
         """
         try:
-            # Prepare data dictionary using model getters, matching the new schema
-            data = {
-                'type': eBeam.get_type(),
-                'date': eBeam.get_date(),
-                'path': eBeam.get_path(),
-                'relUniformity': eBeam.get_relative_uniformity(),
-                'relOutput': eBeam.get_relative_output(),
-                'centerShift': None,  # E-beams don't have centerShift
-                'machineId': eBeam.get_machine_SN(),
-                'note': None  # Add note if available in the model
-            }
-
-            # Upload to the single beam table
-            table_name = 'beam'
-            return self.db_adapter.upload_beam_data(table_name, data)
+            # Check if this is a baseline
+            if eBeam.get_baseline():
+                # Upload to baseline table as individual metric records
+                return self._upload_baseline_metrics(eBeam, check_type='beam')
+            else:
+                # Prepare data dictionary using model getters, matching the beam table schema
+                data = {
+                    'type': eBeam.get_type(),
+                    'date': eBeam.get_date(),
+                    'path': eBeam.get_path(),
+                    'relUniformity': eBeam.get_relative_uniformity(),
+                    'relOutput': eBeam.get_relative_output(),
+                    'centerShift': None,  # E-beams don't have centerShift
+                    'machineId': eBeam.get_machine_SN(),
+                    'note': None  # Add note if available in the model
+                }
+                return self.db_adapter.upload_beam_data('beam', data)
 
         except Exception as e:
             print(f"Error during E-beam upload: {e}")
@@ -280,25 +357,30 @@ class Uploader:
     # --- X-BEAM ---
     def xModelUpload(self, xBeam):
         """
-        Upload data for X-beam model to the single beam table.
+        Upload data for X-beam model to the single beam table or baseline table.
         Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
+        
+        For baselines: Uploads individual metric records to baseline table.
+        For regular beams: Uploads single record to beam table.
         """
         try:
-            # Prepare data dictionary using model getters, matching the new schema
-            data = {
-                'type': xBeam.get_type(),
-                'date': xBeam.get_date(),
-                'path': xBeam.get_path(),
-                'relUniformity': xBeam.get_relative_uniformity(),
-                'relOutput': xBeam.get_relative_output(),
-                'centerShift': xBeam.get_center_shift(),
-                'machineId': xBeam.get_machine_SN(),
-                'note': None  # Add note if available in the model
-            }
-
-            # Upload to the single beam table
-            table_name = 'beam'
-            return self.db_adapter.upload_beam_data(table_name, data)
+            # Check if this is a baseline
+            if xBeam.get_baseline():
+                # Upload to baseline table as individual metric records
+                return self._upload_baseline_metrics(xBeam, check_type='beam')
+            else:
+                # Prepare data dictionary using model getters, matching the beam table schema
+                data = {
+                    'type': xBeam.get_type(),
+                    'date': xBeam.get_date(),
+                    'path': xBeam.get_path(),
+                    'relUniformity': xBeam.get_relative_uniformity(),
+                    'relOutput': xBeam.get_relative_output(),
+                    'centerShift': xBeam.get_center_shift(),
+                    'machineId': xBeam.get_machine_SN(),
+                    'note': None  # Add note if available in the model
+                }
+                return self.db_adapter.upload_beam_data('beam', data)
 
         except Exception as e:
             print(f"Error during X-beam upload: {e}")
@@ -308,29 +390,34 @@ class Uploader:
     # --- GEO MODEL ---
     def geoModelUpload(self, geoModel):
         """
-        Upload data for Geo6xfffModel to the single beam table.
+        Upload data for Geo6xfffModel to the single beam table or baseline table.
         Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
+        
+        For baselines: Uploads individual metric records to baseline table.
+        For regular beams: Uploads single record to beam table.
         
         Note: Geometry models have additional data (isocenter, gantry, couch, MLC, jaws) 
         that is not stored in the basic beam table. The full extraction code is 
         commented out below for easy re-enabling when geometry tables are created.
         """
         try:
-            # Prepare basic beam data matching the new schema
-            data = {
-                'type': geoModel.get_type(),
-                'date': geoModel.get_date(),
-                'path': geoModel.get_path(),
-                'relUniformity': geoModel.get_relative_uniformity(),
-                'relOutput': geoModel.get_relative_output(),
-                'centerShift': geoModel.get_center_shift(),
-                'machineId': geoModel.get_machine_SN(),
-                'note': None  # Add note if available in the model
-            }
-
-            # Upload basic beam data to the single beam table
-            table_name = 'beam'
-            result = self.db_adapter.upload_beam_data(table_name, data)
+            # Check if this is a baseline
+            if geoModel.get_baseline():
+                # Upload to baseline table as individual metric records
+                return self._upload_baseline_metrics(geoModel, check_type='geometry')
+            else:
+                # Prepare basic beam data matching the beam table schema
+                data = {
+                    'type': geoModel.get_type(),
+                    'date': geoModel.get_date(),
+                    'path': geoModel.get_path(),
+                    'relUniformity': geoModel.get_relative_uniformity(),
+                    'relOutput': geoModel.get_relative_output(),
+                    'centerShift': geoModel.get_center_shift(),
+                    'machineId': geoModel.get_machine_SN(),
+                    'note': None  # Add note if available in the model
+                }
+                result = self.db_adapter.upload_beam_data('beam', data)
             
             # ========================================================================
             # COMMENTED OUT: Full geometry data extraction
