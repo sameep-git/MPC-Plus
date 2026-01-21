@@ -51,10 +51,17 @@ class ImageModel(AbstractBeamModel):
     def generate_image_name(self):
         """
         Image Name Format:
-        BeamType_MachineSN_Date_Time
+        machine_id/date/beam_type/time/
         """
-        beam = self.get_type()
-        sn = self.get_machine_SN()
+        machine_id = self.get_machine_SN()         # or another method if your machine_id differs
+        beam_type = self.get_type()
         date_obj = self.get_date()
-        date_str = date_obj.strftime("%Y%m%d_%H%M%S")
-        return f"{beam}_{sn}_{date_str}"
+
+        date_str = date_obj.strftime("%Y%m%d")    # date part
+        time_str = date_obj.strftime("%H%M%S")    # time part
+
+        name = "BeamProfileCheck"
+
+        # return path-style string
+        return f"{machine_id}/{date_str}/{beam_type}/{time_str}/{name}"
+

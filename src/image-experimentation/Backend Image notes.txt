@@ -32,11 +32,14 @@ Need graphs from Field Analysis
    --> (Points, Matrix, Picture?)
    USE A picture
 Database set up --> Uploader
+
 Change:: Symm and Flat be apart of beam models
+        Images NEED TO BE PNG
 
 Change uploader so checks if isbaseline
 
 Need DOC - Dose output Correction
+
 Chance naming convention of images
 -->beamtype/machineID/dateTime
 Change to this:
