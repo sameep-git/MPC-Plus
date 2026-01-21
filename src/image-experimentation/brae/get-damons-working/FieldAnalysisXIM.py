@@ -26,28 +26,97 @@ import pydicom as dicom
 # Floodfieldraw=r"C:\Users\dsprouts\Desktop\Coding Projects\Images\Floodfield10MV-Raw.xim"
 # floodfield=XIM(Floodfieldraw)
 
-eps=1e-8
+# -------------------------------------------------------------------------
 
-baseline_img= image.load("src/image-experimentation/brae/get-damons-working/images-and-reports/10raw.png")
-#flood_img=flood_img.convert("L")
-baseline_array =np.asarray(baseline_img)
-raw_img =image.load("src/image-experimentation/brae/get-damons-working/images-and-reports/10raw_0207.png")
-raw_array=np.asarray(raw_img)
 
+# -------------------------------------------------------------------------
+# Small value added to avoid division by zero.
+# Some baseline pixels may be zero or extremely small (dead pixels, edges).
+# This keeps the math stable without affecting real image values.
+# -------------------------------------------------------------------------
+eps = 1e-8
+
+# -------------------------------------------------------------------------
+# Load the BASELINE image (reference detector response)
+# This image represents the expected or "normal" pixel intensities.
+# -------------------------------------------------------------------------
+baseline_img = image.load(
+    "src/image-experimentation/brae/get-damons-working/images-and-reports/10raw.png"
+)
+
+# Convert the baseline image to a NumPy array for pixel-wise math
+baseline_array = np.asarray(baseline_img)
+
+# -------------------------------------------------------------------------
+# Load the RAW image (image being compared against the baseline)
+# -------------------------------------------------------------------------
+raw_img = image.load(
+    "src/image-experimentation/brae/get-damons-working/images-and-reports/10raw_0207.png"
+)
+
+# Convert the raw image to a NumPy array
+raw_array = np.asarray(raw_img)
+
+# -------------------------------------------------------------------------
+# Compute the mean intensity of the baseline image.
+# This is used to re-scale the corrected image so overall brightness
+# stays consistent with the baseline.
+# -------------------------------------------------------------------------
 mean_baseline = float(np.mean(baseline_array))
-corrected =(raw_array/(baseline_array+eps))* mean_baseline
-corrected_dicom=image.array_to_dicom(corrected,sid=1000,gantry=0,coll=0,couch=0,dpi=280)
-corrected_dicom.save_as("src/image-experimentation/brae/get-damons-working/images-and-reports/Baseline0201vsRaw0207.dcm")
 
+# -------------------------------------------------------------------------
+# Perform pixel-by-pixel normalization:
+#   1. Divide the raw image by the baseline image
+#   2. Add eps to prevent divide-by-zero
+#   3. Multiply by the baseline mean to preserve intensity scale
+#
+# This corrects detector non-uniformity while keeping physics intact.
+# -------------------------------------------------------------------------
+corrected = (raw_array / (baseline_array + eps)) * mean_baseline
 
+# -------------------------------------------------------------------------
+# Convert the corrected NumPy array back into a DICOM image.
+# Geometry metadata (SID, gantry, collimator, couch) is required
+# so pylinac can properly analyze the image.
+# -------------------------------------------------------------------------
+corrected_dicom = image.array_to_dicom(
+    corrected,
+    sid=1000,
+    gantry=0,
+    coll=0,
+    couch=0,
+    dpi=280
+)
 
-#corrected_data=r"C:\Users\dsprouts\Desktop\Coding Projects\Images\Baseline0201vsRaw0207.dcm"
-corrected_data = r"src/image-experimentation/brae/get-damons-working/images-and-reports/Baseline0201vsRaw0207.dcm"
-my_img=FieldAnalysis(corrected_data)
+# Save the corrected DICOM image to disk
+corrected_dicom.save_as(
+    "src/image-experimentation/brae/get-damons-working/images-and-reports/Baseline0201vsRaw0207.dcm"
+)
+
+# -------------------------------------------------------------------------
+# Run pylinac Field Analysis on the corrected DICOM image
+# -------------------------------------------------------------------------
+corrected_data = (
+    "src/image-experimentation/brae/get-damons-working/images-and-reports/"
+    "Baseline0201vsRaw0207.dcm"
+)
+
+# Initialize field analysis
+my_img = FieldAnalysis(corrected_data)
+
+# Perform flatness, symmetry, and other field metrics
 my_img.analyze()
+
+# Print numerical analysis results to the console
 print(my_img.results())
+
+# Display the analyzed image with pylinac overlays
 my_img.plot_analyzed_image()
-my_img.publish_pdf(filename="src/image-experimentation/brae/get-damons-working/images-and-reports/Baseline0201vsRaw0207.pdf")
+
+# Generate a PDF report with results and annotated images
+my_img.publish_pdf(
+    filename="src/image-experimentation/brae/get-damons-working/images-and-reports/Baseline0201vsRaw0207.pdf"
+)
 
 
 #plt.imshow(corrected_dicom1.pixel_array)

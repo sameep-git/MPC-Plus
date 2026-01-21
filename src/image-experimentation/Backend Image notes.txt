@@ -1,0 +1,28 @@
+Need:
+
+data:
+--------------
+Vertical symmetry: -1.786%
+Horizontal symmetry: 3.521%
+
+Vertical flatness: 5.625%
+Horizontal flatness: 5.439%
+--> Has threshold values (tbd on them)
+
+Need Graph - Symettry Profile
+
+
+MPC Output:
+Always "Relative to the baseline"
+Need DOC - Dose output Correction
+If you do baseline, you must tell it absolute dose at that point in time (At that point relative will be 0, duh)
+Need Settings: Absolute output input, & History Of
+1 month leway 
+
+
+Baseline:
+Done at the machine level
+No fucntionality needed
+Down steream proces 
+Get isBaseline from XML
+
