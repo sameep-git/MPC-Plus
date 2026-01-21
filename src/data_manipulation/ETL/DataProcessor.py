@@ -109,11 +109,11 @@ class DataProcessor:
                     # Set Up DataBase
                     # Connect to database
                     connection_params = {
-                        'url': 'your-supabase-url',
-                        'key': 'your-supabase-key'
+                        "url": os.getenv("SUPABASE_URL"),
+                        "key": os.getenv("SUPABASE_KEY"),
                     }
                     self.up.connect(connection_params)
-                    # self.up.upload(beam)
+                    self.up.upload(beam)
                     print("Uploading Complete")
                     self.up.close()
 

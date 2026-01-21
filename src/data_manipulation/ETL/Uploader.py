@@ -21,7 +21,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Dict, Any, Optional
 import json
-
+#---temp---
+import os
 
 class DatabaseAdapter(ABC):
     """
@@ -86,9 +87,21 @@ class SupabaseAdapter(DatabaseAdapter):
         try:
             from supabase import create_client, Client
             
+            # url = connection_params.get('url')
+            # key = connection_params.get('key')
+            # print("SUPABASE_URL =", os.getenv("SUPABASE_URL"))
+            # print("SUPABASE_URL:", url)
+
+            # connection_params = {
+            #     "url": os.getenv("SUPABASE_URL"),
+            #     "key": os.getenv("SUPABASE_KEY"),
+            # }
             url = connection_params.get('url')
             key = connection_params.get('key')
-            
+            # print("SUPABASE_URL =", os.getenv("SUPABASE_URL"))
+            # print("SUPABASE_URL:", url)
+
+
             if not url or not key:
                 print("Error: Supabase connection requires 'url' and 'key' parameters")
                 return False
@@ -214,6 +227,7 @@ class Uploader:
             return False
 
         model_type = type(model).__name__.lower()
+        
 
         if "ebeam" in model_type:
             return self.eModelUpload(model)
@@ -284,7 +298,7 @@ class Uploader:
             # Upload each metric record
             success_count = 0
             for metric_data in metrics:
-                if self.db_adapter.upload_beam_data('baseline', metric_data):
+                if self.db_adapter.upload_beam_data('baselines', metric_data):
                     success_count += 1
                 else:
                     print(f"Failed to upload baseline metric: {metric_data['metric_type']}")

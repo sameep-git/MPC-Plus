@@ -74,7 +74,7 @@ class AbstractBeamModel(ABC):
         match = re.search(r'SN(\d{4})', path)
         if not match:
             raise ValueError(f"Could not extract serial number from path: {path}")
-        return match.group(1)
+        return "SN" + (match.group(1))
     
     def _getIsBaselineFromPathName(self, pathName: str) -> bool:
         """
