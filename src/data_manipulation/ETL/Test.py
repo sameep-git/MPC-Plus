@@ -20,14 +20,18 @@ def main():
     # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
     # dp = DataProcessor(path)
     # dp.RunTest()
-    print("----------------------------------------------------------------")
-    path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x"
+    # print("----------------------------------------------------------------")
+    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x"
+    # dp = DataProcessor(path)
+    # dp.RunTest()
+    # print("----------------------------------------------------------------")
+    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch"
+    # dp = DataProcessor(path)
+    # dp.RunTest()
+    print("--------------------Image Processing Test----------------------------")
+    path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
     dp = DataProcessor(path)
     dp.RunTest()
-    print("----------------------------------------------------------------")
-    path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch"
-    dp = DataProcessor(path)
-    dp.RunTest()
-
+    
 if __name__ == "__main__":
     main()

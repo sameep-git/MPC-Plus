@@ -1,28 +1,60 @@
 from src.data_manipulation.models.AbstractBeamModel import AbstractBeamModel
 from datetime import datetime
 import re
-
 class ImageModel(AbstractBeamModel):
     def __init__(self):
         super().__init__()
+        self._symmetry_horizontal = None
+        self._symmetry_vertical = None
+        self._flatness_horizontal = None
+        self._flatness_vertical = None
 
     # Getters
     def get_image(self):
         return self._image
 
-    def get_ImageName(self):
+    def get_image_name(self):
+        return self._image_name
+
+    def get_symmetry_horizontal(self):
+        return self._symmetry_horizontal
+
+    def get_symmetry_vertical(self):
+        return self._symmetry_vertical
+
+    def get_flatness_horizontal(self):
+        return self._flatness_horizontal
+
+    def get_flatness_vertical(self):
+        return self._flatness_vertical
+
+    # Setters
+    def set_image(self, image):
+        self._image = image
+
+    def set_image_name(self, image_name):
+        self._image_name = image_name
+
+    def set_symmetry_horizontal(self, value):
+        self._symmetry_horizontal = value
+
+    def set_symmetry_vertical(self, value):
+        self._symmetry_vertical = value
+
+    def set_flatness_horizontal(self, value):
+        self._flatness_horizontal = value
+
+    def set_flatness_vertical(self, value):
+        self._flatness_vertical = value
+
+    # Image naming helper
+    def generate_image_name(self):
         """
         Image Name Format:
-        BeamType_MachineSN_Date
+        BeamType_MachineSN_Date_Time
         """
         beam = self.get_type()
         sn = self.get_machine_SN()
         date_obj = self.get_date()
-        date_str = date_obj.strftime("%Y%m%d")
+        date_str = date_obj.strftime("%Y%m%d_%H%M%S")
         return f"{beam}_{sn}_{date_str}"
-
-      
-    # Setters
-    def set_image(self, image):
-        self._image = image
-    

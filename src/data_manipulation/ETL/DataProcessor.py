@@ -1,4 +1,5 @@
 import os
+from pylinac.core.image import XIM
 from .data_extractor import data_extractor
 from .image_extractor import image_extractor
 from .Uploader import Uploader
@@ -49,7 +50,7 @@ class DataProcessor:
     # -------------------------------------------------------------------------
     # Generic helper method for images
     # -------------------------------------------------------------------------
-    def _init_beam_image(self, beam_type):
+    def _init_beam_image(self, beam_type, is_test=False):
         """
         Initialize an ImageModel for a given beam type and extract the image data.
 
@@ -61,10 +62,15 @@ class DataProcessor:
         image.set_type(beam_type)
         image.set_date(image._getDateFromPathName(self.image_path))
         image.set_machine_SN(image._getSNFromPathName(self.image_path))
-        self.image_ex.get_image(image)
-        print("Image Name: ", image.get_ImageName())
+        image.set_image_name(image.generate_image_name())
+        image.set_image(XIM(image.get_path()))
+        #Process the image (Get flatness and symmetry from Pilinac FieldAnalysis)
+        if is_test: print("Processing test image in image_extractor.py")
+        self.image_ex.process_image(image, is_test)
+        if is_test: 
+            print("Test image processed & returned from image_extractor.py")
+            print("Image Name: ", image.get_image_name())
         #return image  # optional if you want to keep a reference to the image object
-
 
     # -------------------------------------------------------------------------
     # Internal beam dispatcher
@@ -115,7 +121,7 @@ class DataProcessor:
 
                 # --- Image Extraction for all beam types ---
                 print(f"Extracting image data for {beam_type} beam...")
-                self._init_beam_image(beam_type)
+                self._init_beam_image(beam_type, is_test)
                 return
 
         # --- No beam type matched ---
