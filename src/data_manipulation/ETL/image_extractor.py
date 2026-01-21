@@ -16,7 +16,7 @@ import numpy as np
 
 class image_extractor:
     def process_image(self, image, is_test=False):
-        baseline_img = XIM(r"data\csv_data\NDS-WKS-SN6543-2025-09-18-08-06-01-0004-BeamCheckTemplate6e\BeamProfileCheck.xim")
+        baseline_img = XIM(r"data/csv_data/NDS-WKS-SN6543-2025-09-18-08-06-01-0004-BeamCheckTemplate6e/BeamProfileCheck.xim")
         #baseline_img = XIM(image.get_path())
         #baseline_img_png = baseline_img = XIM(image.get_path()).array.astype(np.float32)
         baseline_img_png = np.asarray(baseline_img)
