@@ -34,7 +34,12 @@ builder.Services.AddGeoCheckDataAccess(builder.Configuration);
 builder.Services.AddThresholdDataAccess(builder.Configuration);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>

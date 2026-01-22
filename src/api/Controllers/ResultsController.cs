@@ -67,7 +67,7 @@ public class ResultsController : ControllerBase
         foreach (var check in beamChecks)
         {
             var date = check.Date;
-            var status = DetermineCheckStatus(check);
+            var status = check.Status; // Already evaluated by Repository
             // derive a single numeric value for display (prefer RelOutput, then RelUniformity, then CenterShift)
             double? value = check.RelOutput ?? check.RelUniformity ?? check.CenterShift;
 
@@ -86,7 +86,7 @@ public class ResultsController : ControllerBase
         foreach (var check in geoChecks)
         {
             var date = check.Date;
-            var status = DetermineGeoCheckStatus(check);
+            var status = check.Status; // Already evaluated by Repository
             // derive a single numeric value for display (prefer RelativeOutput, then RelativeUniformity, then CenterShift, then IsoCenterSize)
             double? value = check.RelativeOutput ?? check.RelativeUniformity ?? check.CenterShift ?? check.IsoCenterSize;
 
@@ -124,25 +124,7 @@ public class ResultsController : ControllerBase
         return Ok(monthlyResults);
     }
 
-    /// <summary>
-    /// Determine the status of a single beam check based on pass criteria.
-    /// </summary>
-    private static string DetermineCheckStatus(Beam beam)
-    {
-        // TODO: Implement actual pass/warning/fail logic based on beam metrics
-        // For now, return "pass" as default
-        return "pass";
-    }
 
-    /// <summary>
-    /// Determine the status of a geometry check based on pass criteria.
-    /// </summary>
-    private static string DetermineGeoCheckStatus(GeoCheck geoCheck)
-    {
-        // TODO: Implement actual pass/warning/fail logic based on geometry check metrics
-        // For now, return "pass" as default
-        return "pass";
-    }
 
     /// <summary>
     /// Aggregate two statuses, returning the worse one.
@@ -150,9 +132,12 @@ public class ResultsController : ControllerBase
     /// </summary>
     private static string AggregateStatuses(string? status1, string? status2)
     {
-        if (status1 == "fail" || status2 == "fail") return "fail";
-        if (status1 == "warning" || status2 == "warning") return "warning";
-        return "pass";
+        var s1 = status1?.ToUpperInvariant();
+        var s2 = status2?.ToUpperInvariant();
+        
+        if (s1 == "FAIL" || s2 == "FAIL") return "FAIL";
+        if (s1 == "WARNING" || s2 == "WARNING") return "WARNING";
+        return "PASS";
     }
 
 

@@ -47,6 +47,11 @@ public class SupabaseThresholdRepository : IThresholdRepository
             {
                 query = query.Filter("beam_variant", Supabase.Postgrest.Constants.Operator.Equals, beamVariant);
             }
+            else
+            {
+                // Explicitly filter for NULL if beamVariant is null, to avoid ambiguous matches
+                query = query.Filter("beam_variant", Supabase.Postgrest.Constants.Operator.Is, "null");
+            }
              
             var result = await query.Get();
             return result.Models.FirstOrDefault()?.ToModel();
@@ -62,20 +67,43 @@ public class SupabaseThresholdRepository : IThresholdRepository
     {
         try
         {
-            var entity = ThresholdEntity.FromModel(threshold);
+            // First, try to find existing threshold by composite key
+            var query = _client.From<ThresholdEntity>()
+                .Filter("machine_id", Supabase.Postgrest.Constants.Operator.Equals, threshold.MachineId)
+                .Filter("check_type", Supabase.Postgrest.Constants.Operator.Equals, threshold.CheckType)
+                .Filter("metric_type", Supabase.Postgrest.Constants.Operator.Equals, threshold.MetricType);
+
+            if (!string.IsNullOrEmpty(threshold.BeamVariant))
+            {
+                query = query.Filter("beam_variant", Supabase.Postgrest.Constants.Operator.Equals, threshold.BeamVariant);
+            }
+            else
+            {
+                query = query.Filter("beam_variant", Supabase.Postgrest.Constants.Operator.Is, "null");
+            }
             
+            var existingResult = await query.Get();
+            var existing = existingResult.Models.FirstOrDefault();
+
+            // If exists, delete it first (simpler than trying to Update which has issues)
+            if (existing != null)
+            {
+                await _client.From<ThresholdEntity>()
+                    .Match(new Dictionary<string, string> { { "id", existing.Id } })
+                    .Delete();
+            }
+
+            // Now insert the new/updated row
+            var entity = ThresholdEntity.FromModel(threshold);
             var result = await _client
                 .From<ThresholdEntity>()
-                .Upsert(entity);
+                .Insert(entity);
             
             var model = result.Models.FirstOrDefault();
 
             if (model == null)
             {
-                // If upsert doesn't return model, maybe fetch it? 
-                // Supabase usually returns the row if we ask, or standard Upsert response.
-                // Assuming it works like Insert.
-                throw new InvalidOperationException("Failed to upsert threshold");
+                return threshold;
             }
 
             return model.ToModel();

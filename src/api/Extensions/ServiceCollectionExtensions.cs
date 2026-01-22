@@ -121,7 +121,8 @@ public static class ServiceCollectionExtensions
             client.InitializeAsync().GetAwaiter().GetResult();
 
             var logger = loggerFactory.CreateLogger<SupabaseBeamRepository>();
-            return new SupabaseBeamRepository(client, logger);
+            var thresholdRepository = provider.GetRequiredService<IThresholdRepository>();
+            return new SupabaseBeamRepository(client, logger, thresholdRepository);
         });
 
         return services;
@@ -185,7 +186,8 @@ public static class ServiceCollectionExtensions
             client.InitializeAsync().GetAwaiter().GetResult();
 
             var logger = loggerFactory.CreateLogger<SupabaseGeoCheckRepository>();
-            return new SupabaseGeoCheckRepository(client, logger);
+            var thresholdRepository = provider.GetRequiredService<IThresholdRepository>();
+            return new SupabaseGeoCheckRepository(client, logger, thresholdRepository);
         });
 
         return services;

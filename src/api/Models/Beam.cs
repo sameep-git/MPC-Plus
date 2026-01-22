@@ -44,5 +44,12 @@ public class Beam
     /// This is not persisted to the database; it's computed by repositories.
     /// </summary>
     public double? Value { get; set; }
+
+    /// <summary>Overall pass/fail status of the beam check.</summary>
+    public string Status { get; set; } = "PASS";
+
+    public string RelOutputStatus { get; set; } = "PASS";
+    public string RelUniformityStatus { get; set; } = "PASS";
+    public string CenterShiftStatus { get; set; } = "PASS";
 }
 

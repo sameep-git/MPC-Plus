@@ -139,4 +139,14 @@ public class GeoCheck
 
     /// <summary>Notes about the geometry check.</summary>
     public string? Note { get; set; }
+
+    /// <summary>Overall pass/fail status of the geometry check.</summary>
+    public string Status { get; set; } = "PASS";
+    // For GeoCheck, since there are many groups, we might handle individual failures in the Metrics dictionaries or separate status dictionary if needed.
+    // However, for simplified frontend logic, we can also add a `FailedMetrics` list?
+    // Or just let the frontend assume PASS unless in FailedMetrics?
+    // Following the user request: "3 pass, 0 fail is PASS, even one fail is FAIL for the whole group"
+    // We will compute overall status. Detailed status per metric might be complex to add as properties for all of them.
+    // Let's add a dictionary for failing metrics for easy lookup?
+    public Dictionary<string, string> MetricStatuses { get; set; } = new();
 }

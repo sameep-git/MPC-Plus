@@ -11,11 +11,13 @@ public class SupabaseBeamRepository : IBeamRepository
 {
     private readonly Client _client;
     private readonly ILogger<SupabaseBeamRepository> _logger;
+    private readonly IThresholdRepository _thresholdRepository;
 
-    public SupabaseBeamRepository(Client client, ILogger<SupabaseBeamRepository> logger)
+    public SupabaseBeamRepository(Client client, ILogger<SupabaseBeamRepository> logger, IThresholdRepository thresholdRepository)
     {
         _client = client;
         _logger = logger;
+        _thresholdRepository = thresholdRepository;
     }
 
     public async Task<IReadOnlyList<Beam>> GetAllAsync(
@@ -39,6 +41,13 @@ public class SupabaseBeamRepository : IBeamRepository
                 beams = beams.Where(b => b.Date >= startDate.Value).ToList();
             if (endDate.HasValue)
                 beams = beams.Where(b => b.Date <= endDate.Value).ToList();
+
+            // Populate Status
+            var thresholds = (await _thresholdRepository.GetAllAsync()).ToList();
+            foreach (var beam in beams)
+            {
+                EvaluateBeamStatus(beam, thresholds);
+            }
             
             return beams.OrderByDescending(b => b.Date).ThenBy(b => b.Type).ToList().AsReadOnly();
         }
@@ -56,7 +65,15 @@ public class SupabaseBeamRepository : IBeamRepository
         {
             var response = await _client.From<BeamEntity>()
                 .Filter("id", Supabase.Postgrest.Constants.Operator.Equals, id).Get();
-            return response.Models.FirstOrDefault()?.ToModel();
+            var beam = response.Models.FirstOrDefault()?.ToModel();
+            
+            if (beam != null)
+            {
+                var thresholds = await _thresholdRepository.GetAllAsync();
+                EvaluateBeamStatus(beam, thresholds);
+            }
+
+            return beam;
         }
         catch (Exception ex)
         {
@@ -119,5 +136,46 @@ public class SupabaseBeamRepository : IBeamRepository
         cancellationToken.ThrowIfCancellationRequested();
         var types = new[] { "6e", "9e", "12e", "16e", "10x", "15x", "6xff" };
         return await Task.FromResult(types.ToList().AsReadOnly());
+    }
+
+    private void EvaluateBeamStatus(Beam beam, IEnumerable<Threshold> thresholds)
+    {
+        // Helper to check status
+        string Check(double? value, string metricType)
+        {
+            if (!value.HasValue) return "PASS";
+            
+            // Find threshold
+            // Priority: Specific variant > Generic
+            var threshold = thresholds.FirstOrDefault(t => 
+                t.MachineId == beam.MachineId && 
+                t.CheckType == "beam" && 
+                t.MetricType == metricType && 
+                t.BeamVariant == beam.Type) 
+            ?? thresholds.FirstOrDefault(t => 
+                t.MachineId == beam.MachineId && 
+                t.CheckType == "beam" && 
+                t.MetricType == metricType && 
+                string.IsNullOrEmpty(t.BeamVariant));
+
+            if (threshold?.Value != null)
+            {
+                if (Math.Abs(value.Value) > threshold.Value) return "FAIL";
+            }
+            return "PASS";
+        }
+
+        beam.RelOutputStatus = Check(beam.RelOutput, "Relative Output");
+        beam.RelUniformityStatus = Check(beam.RelUniformity, "Relative Uniformity");
+        beam.CenterShiftStatus = Check(beam.CenterShift, "Center Shift");
+
+        if (beam.RelOutputStatus == "FAIL" || beam.RelUniformityStatus == "FAIL" || beam.CenterShiftStatus == "FAIL")
+        {
+            beam.Status = "FAIL";
+        }
+        else
+        {
+            beam.Status = "PASS";
+        }
     }
 }
