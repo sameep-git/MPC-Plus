@@ -106,6 +106,14 @@ class DataProcessor:
                 print(f"Extracting image data for {beam_type} beam...")
                 beam.set_image_model(self._init_beam_image(beam_type, is_test))
                 
+                ##Unsure of the cleanliness of this soln
+                #Problem: Beams need to hold flatness and sym of images
+                #Sol1: Data processor will tell beam to get  its vals from image
+                # ^ implemented soln
+                # Alt Soln: Image holds a direct link to its beam (Doublely Linked) 
+                # and updates its parent beam stats as they are calculated
+                beam.set_flat_and_sym_vals_from_image()
+
                 if(is_test):
                     print("Running test extraction...")
                     self.data_ex.extractTest(beam)
@@ -123,11 +131,7 @@ class DataProcessor:
                     self.up.upload(beam)
                     print("Beam Uploading Complete")
                     self.up.close()
-        return
-
-                
-
-
+                return
 
         # --- No beam type matched ---
         print(f"Unknown or unsupported beam type for path: {self.data_path}")
@@ -146,13 +150,3 @@ class DataProcessor:
         self._process_beam(is_test=True)
 
     
-    # -------------------------------------------------------------------------
-    # Helper Function
-    # -------------------------------------------------------------------------
-    def XimToPng(image):
-        """
-        Convert a XIM image to a PNG
-        Why? Xim is the default image type from a MPC
-        We want a PNG to run a pilinac field analysis on and to store in the database
-        """
-        return np.asarray(image)
