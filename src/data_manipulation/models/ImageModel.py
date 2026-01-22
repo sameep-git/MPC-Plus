@@ -1,6 +1,9 @@
+from asyncio.windows_events import NULL
 from src.data_manipulation.models.AbstractBeamModel import AbstractBeamModel
 from datetime import datetime
 import re
+import numpy as np
+
 class ImageModel(AbstractBeamModel):
     def __init__(self):
         super().__init__()
@@ -64,4 +67,25 @@ class ImageModel(AbstractBeamModel):
 
         # return path-style string
         return f"{machine_id}/{date_str}/{beam_type}/{time_str}/{name}"
+
+    def convert_XIM_to_PNG(self):
+        """
+        MPC images are natively stored and handled as XIM files.
+        However, pylinac field analysis operates on standard image formats (e.g., PNG),
+        and our database only stores PNG images.
+        
+        This method converts the current XIM image into a NumPy array representation
+        suitable for PNG-based analysis and persistence.
+        """
+        xim_image = self.get_image()
+
+        if xim_image is None:
+            raise ValueError("No XIM image set. Load an image before conversion to PNG.")
+
+        # Convert XIM image to a NumPy array (PNG-compatible in-memory format)
+        png_array = np.asarray(xim_image)
+
+        # Store the converted image for downstream field analysis and DB storage
+        self.set_image(png_array)
+
 

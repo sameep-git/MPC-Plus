@@ -1,4 +1,5 @@
 watchdog==3.0.0
 pylinac==3.38.0
 supabase==2.23.3
+numpy==1.26.4
 websockets>=12.0

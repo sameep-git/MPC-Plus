@@ -32,16 +32,17 @@ def main():
     # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch"
     # dp = DataProcessor(path)
     # dp.RunTest()
-    # print("--------------------Image Processing Test----------------------------")
-    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
-    # dp = DataProcessor(path)
-    # dp.RunTest()
-    print("--------------------Baseline Table Uploader----------------------------")
-    print("IN TEST.PY:  SUPABASE_URL =", os.getenv("SUPABASE_URL"))
-    path = r"data\csv_data\TST-TST-SN5512-2015-09-19-11-11-11-0004-BeamForceBaseline6e"
+    print("--------------------Image Processing Test----------------------------")
+    path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
     dp = DataProcessor(path)
-            #Run, not RunTest so we can see if it makes it to the DB
-    dp.Run()
+    dp.RunTest()
+    # print("WARNING: This test uploades to the database table 'baselines'")
+    # print("--------------------Baseline Table Uploader----------------------------")
+    # print("IN TEST.PY:  SUPABASE_URL =", os.getenv("SUPABASE_URL"))
+    # path = r"data\csv_data\TST-TST-SN5512-2015-09-19-11-11-11-0004-BeamForceBaseline6e"
+    # dp = DataProcessor(path)
+    #         #Run, not RunTest so we can see if it makes it to the DB
+    # dp.Run()
     
 if __name__ == "__main__":
     main()

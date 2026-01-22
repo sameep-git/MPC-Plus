@@ -34,6 +34,7 @@ class DataProcessor:
     # -------------------------------------------------------------------------
     # Generic helper method for beams
     # -------------------------------------------------------------------------
+
     def _init_beam_model(self, model_class, beam_type):
         """
         Generic initializer for any beam model.
@@ -64,6 +65,7 @@ class DataProcessor:
         image.set_machine_SN(image._getSNFromPathName(self.image_path))
         image.set_image_name(image.generate_image_name())
         image.set_image(XIM(image.get_path()))
+        image.convert_XIM_to_PNG()
         #Process the image (Get flatness and symmetry from Pilinac FieldAnalysis)
         if is_test: print("Processing test image in image_extractor.py")
         self.image_ex.process_image(image, is_test)
@@ -72,6 +74,7 @@ class DataProcessor:
             print("Image Name: ", image.get_image_name())
         #return image  # optional if you want to keep a reference to the image object
 
+    
     # -------------------------------------------------------------------------
     # Internal beam dispatcher
     # -------------------------------------------------------------------------
@@ -139,3 +142,15 @@ class DataProcessor:
     def RunTest(self):
         """Run the test data processing workflow."""
         self._process_beam(is_test=True)
+
+    
+    # -------------------------------------------------------------------------
+    # Helper Function
+    # -------------------------------------------------------------------------
+    def XimToPng(image):
+        """
+        Convert a XIM image to a PNG
+        Why? Xim is the default image type from a MPC
+        We want a PNG to run a pilinac field analysis on and to store in the database
+        """
+        return np.asarray(image)

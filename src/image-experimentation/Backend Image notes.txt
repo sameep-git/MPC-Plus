@@ -48,6 +48,8 @@ machine_id/date/beam_type/time/ F&SGraph
 machine_id/date/GEO/time/ All
 
 Thursday - F & S to beam model:
+- Images must be PNG 
+-Commit
 -Getters and Setters in beam model
 -Beam processor/Data processor call image processor
 -Commit
