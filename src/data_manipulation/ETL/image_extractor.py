@@ -26,7 +26,7 @@ class image_extractor:
         
         baseline_img = XIM(r"data/csv_data/NDS-WKS-SN6543-2025-09-18-08-06-01-0004-BeamCheckTemplate6e/BeamProfileCheck.xim")
         baseline_img_png = np.asarray(baseline_img)
-        raw_img_png = image.get_path()
+        raw_img_png = image.get_image()
 
         # -------------------------------------------------------------------------
         # Small value added to avoid division by zero.
