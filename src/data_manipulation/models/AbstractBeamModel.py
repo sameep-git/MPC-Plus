@@ -12,6 +12,7 @@ class AbstractBeamModel(ABC):
         self._date = None
         self._machine_SN = None
         self._baseline = False;
+        self._imageModel = None
 
     # --- Getters ---
     def get_type(self):
@@ -27,7 +28,10 @@ class AbstractBeamModel(ABC):
         return self._machine_SN
 
     def get_baseline(self):
-        return self._baseline 
+        return self._baseline
+
+    def get_image_model(self):
+        return self._imageModel  
 
     # --- Setters ---
     def set_type(self, type_value):
@@ -44,6 +48,9 @@ class AbstractBeamModel(ABC):
     
     def set_baseline(self, baseline):
         self._baseline = baseline
+
+    def set_image_model(self, imageModel):
+        self._imageModel = imageModel
 
     # --- Concrete utility methods shared by subclasses ---
     def _getDateFromPathName(self, path: str) -> datetime:

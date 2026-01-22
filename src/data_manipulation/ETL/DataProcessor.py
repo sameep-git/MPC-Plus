@@ -72,7 +72,7 @@ class DataProcessor:
         if is_test: 
             print("Test image processed & returned from image_extractor.py")
             print("Image Name: ", image.get_image_name())
-        #return image  # optional if you want to keep a reference to the image object
+        return image
 
     
     # -------------------------------------------------------------------------
@@ -102,7 +102,11 @@ class DataProcessor:
                 # Initialize the correct beam model (EBeam, XBeam, etc.)
                 beam = self._init_beam_model(model_class, beam_type)
 
-                if is_test:
+                # --- Image Extraction for all beam types ---
+                print(f"Extracting image data for {beam_type} beam...")
+                beam.set_image_model(self._init_beam_image(beam_type, is_test))
+                
+                if(is_test):
                     print("Running test extraction...")
                     self.data_ex.extractTest(beam)
                 else:
@@ -117,15 +121,13 @@ class DataProcessor:
                     }
                     self.up.connect(connection_params)
                     self.up.upload(beam)
-                    print("Uploading Complete")
+                    print("Beam Uploading Complete")
                     self.up.close()
+        return
 
                 
 
-                # --- Image Extraction for all beam types ---
-                print(f"Extracting image data for {beam_type} beam...")
-                self._init_beam_image(beam_type, is_test)
-                return
+
 
         # --- No beam type matched ---
         print(f"Unknown or unsupported beam type for path: {self.data_path}")
