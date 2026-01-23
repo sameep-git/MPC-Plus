@@ -43,6 +43,9 @@ public class BeamEntity : BaseModel
     [Column("accepted_date")]
     public DateTime? AcceptedDate { get; set; }
 
+    [Column("timestamp")]
+    public DateTime? Timestamp { get; set; }
+
     /// <summary>
     /// Converts this entity to a domain model.
     /// </summary>
@@ -52,6 +55,7 @@ public class BeamEntity : BaseModel
             Id = Id,
             Type = Type,
             Date = Date,
+            Timestamp = Timestamp,
             Path = Path,
             RelUniformity = RelUniformity,
             RelOutput = RelOutput,
@@ -71,6 +75,7 @@ public class BeamEntity : BaseModel
             Id = beam.Id,
             Type = beam.Type,
             Date = beam.Date,
+            Timestamp = beam.Timestamp,
             Path = beam.Path,
             RelUniformity = beam.RelUniformity,
             RelOutput = beam.RelOutput,

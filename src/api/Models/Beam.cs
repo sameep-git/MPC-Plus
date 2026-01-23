@@ -14,6 +14,9 @@ public class Beam
     /// <summary>Date of the beam data.</summary>
     public required DateTime Date { get; set; }
 
+    /// <summary>High-precision timestamp of the beam data.</summary>
+    public DateTime? Timestamp { get; set; }
+
     /// <summary>File path to the beam data.</summary>
     public string? Path { get; set; }
 

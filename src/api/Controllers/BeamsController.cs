@@ -16,7 +16,7 @@ public class BeamsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Beam>>> GetAll(
+    public async Task<ActionResult<IEnumerable<CheckGroup>>> GetAll(
         [FromQuery] string? type = null,
         [FromQuery] string? machineId = null,
         [FromQuery] string? date = null,
@@ -44,7 +44,32 @@ public class BeamsController : ControllerBase
             endDate: endDateDt,
             cancellationToken: cancellationToken);
 
-        return Ok(beams);
+        // Group beams by time proximity (e.g. 2 minutes)
+        var groups = new List<CheckGroup>();
+        if (!beams.Any())
+        {
+            return Ok(groups);
+        }
+
+        var sortedBeams = beams.OrderBy(b => b.Timestamp ?? b.Date).ToList();
+        var currentGroupBeams = new List<Beam>();
+        var referenceTime = sortedBeams[0].Timestamp ?? sortedBeams[0].Date;
+
+        foreach (var beam in sortedBeams)
+        {
+            var time = beam.Timestamp ?? beam.Date;
+            if ((time - referenceTime).Duration() > TimeSpan.FromMinutes(2))
+            {
+                groups.Add(new CheckGroup(referenceTime, currentGroupBeams));
+                currentGroupBeams = new List<Beam>();
+                referenceTime = time;
+            }
+            currentGroupBeams.Add(beam);
+        }
+        groups.Add(new CheckGroup(referenceTime, currentGroupBeams));
+
+        // Return ordered by latest group first
+        return Ok(groups.OrderByDescending(g => g.Timestamp));
     }
 
     [HttpGet("{id}")]
