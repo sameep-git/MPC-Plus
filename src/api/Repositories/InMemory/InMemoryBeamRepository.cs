@@ -15,23 +15,23 @@ public class InMemoryBeamRepository : IBeamRepository
     private static readonly IReadOnlyList<Beam> SeedBeams =
     [
         // MPC-001 (Primary Gantry) - Multiple beam types across several days
-        new Beam { Id = "beam-001", Type = "6e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-5)), MachineId = "MPC-001", RelOutput = 98.5, RelUniformity = 99.2 },
-        new Beam { Id = "beam-002", Type = "6e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-4)), MachineId = "MPC-001", RelOutput = 98.7, RelUniformity = 99.1 },
-        new Beam { Id = "beam-003", Type = "6e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-3)), MachineId = "MPC-001", RelOutput = 98.9, RelUniformity = 99.3 },
-        new Beam { Id = "beam-004", Type = "15x", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-5)), MachineId = "MPC-001", RelOutput = 97.2, RelUniformity = 98.5, CenterShift = 0.15 },
-        new Beam { Id = "beam-005", Type = "15x", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-4)), MachineId = "MPC-001", RelOutput = 97.5, RelUniformity = 98.7, CenterShift = 0.12 },
+    new Beam { Id = "beam-001", Type = "6e", Date = new DateOnly(2025, 11, 9), MachineId = "MPC-001", RelOutput = 98.5, RelUniformity = 99.2 },
+    new Beam { Id = "beam-002", Type = "6e", Date = new DateOnly(2025, 11, 8), MachineId = "MPC-001", RelOutput = 98.7, RelUniformity = 99.1 },
+    new Beam { Id = "beam-003", Type = "6e", Date = new DateOnly(2025, 11, 7), MachineId = "MPC-001", RelOutput = 98.9, RelUniformity = 99.3 },
+    new Beam { Id = "beam-004", Type = "15x", Date = new DateOnly(2025, 11, 9), MachineId = "MPC-001", RelOutput = 97.2, RelUniformity = 98.5, CenterShift = 0.15 },
+    new Beam { Id = "beam-005", Type = "15x", Date = new DateOnly(2025, 11, 8), MachineId = "MPC-001", RelOutput = 97.5, RelUniformity = 98.7, CenterShift = 0.12 },
 
         // MPC-002 (Secondary Gantry) - Different beam types
-        new Beam { Id = "beam-006", Type = "6e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-5)), MachineId = "MPC-002", RelOutput = 99.1, RelUniformity = 99.4 },
-        new Beam { Id = "beam-007", Type = "6e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-3)), MachineId = "MPC-002", RelOutput = 99.2, RelUniformity = 99.5 },
-        new Beam { Id = "beam-008", Type = "10x", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-5)), MachineId = "MPC-002", RelOutput = 96.8, RelUniformity = 98.2, CenterShift = 0.08 },
-        new Beam { Id = "beam-009", Type = "10x", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-4)), MachineId = "MPC-002", RelOutput = 96.9, RelUniformity = 98.3, CenterShift = 0.10 },
+    new Beam { Id = "beam-006", Type = "6e", Date = new DateOnly(2025, 11, 9), MachineId = "MPC-002", RelOutput = 99.1, RelUniformity = 99.4 },
+    new Beam { Id = "beam-007", Type = "6e", Date = new DateOnly(2025, 11, 7), MachineId = "MPC-002", RelOutput = 99.2, RelUniformity = 99.5 },
+    new Beam { Id = "beam-008", Type = "10x", Date = new DateOnly(2025, 11, 9), MachineId = "MPC-002", RelOutput = 96.8, RelUniformity = 98.2, CenterShift = 0.08 },
+    new Beam { Id = "beam-009", Type = "10x", Date = new DateOnly(2025, 11, 8), MachineId = "MPC-002", RelOutput = 96.9, RelUniformity = 98.3, CenterShift = 0.10 },
 
         // MPC-003 (QA Test Bench) - Diagnostic machine with various beams
-        new Beam { Id = "beam-010", Type = "6e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-5)), MachineId = "MPC-003", RelOutput = 98.0, RelUniformity = 99.0 },
-        new Beam { Id = "beam-011", Type = "9e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-5)), MachineId = "MPC-003", RelOutput = 97.5, RelUniformity = 98.8 },
-        new Beam { Id = "beam-012", Type = "12e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-4)), MachineId = "MPC-003", RelOutput = 96.9, RelUniformity = 98.6 },
-        new Beam { Id = "beam-013", Type = "16e", Date = DateOnly.FromDateTime(DateTime.Now.AddDays(-3)), MachineId = "MPC-003", RelOutput = 96.2, RelUniformity = 98.4 },
+    new Beam { Id = "beam-010", Type = "6e", Date = new DateOnly(2025, 11, 9), MachineId = "MPC-003", RelOutput = 98.0, RelUniformity = 99.0 },
+    new Beam { Id = "beam-011", Type = "9e", Date = new DateOnly(2025, 11, 9), MachineId = "MPC-003", RelOutput = 97.5, RelUniformity = 98.8 },
+    new Beam { Id = "beam-012", Type = "12e", Date = new DateOnly(2025, 11, 8), MachineId = "MPC-003", RelOutput = 96.9, RelUniformity = 98.6 },
+    new Beam { Id = "beam-013", Type = "16e", Date = new DateOnly(2025, 11, 7), MachineId = "MPC-003", RelOutput = 96.2, RelUniformity = 98.4 },
     ];
 
     private readonly ConcurrentDictionary<string, Beam> _beams;

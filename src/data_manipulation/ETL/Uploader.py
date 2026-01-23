@@ -17,12 +17,16 @@ Supported beam models:
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from typing import Dict, Any, Optional
-import json
-#---temp---
+import logging
 import os
+import json
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
+
 
 class DatabaseAdapter(ABC):
     """
@@ -45,13 +49,14 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def upload_beam_data(self, table_name: str, data: Dict[str, Any]) -> bool:
+    def upload_beam_data(self, table_name: str, data: Dict[str, Any], path: str = None) -> bool:
         """
         Upload beam data to the specified table.
         
         Args:
             table_name: Name of the database table
             data: Dictionary containing the data to upload
+            path: Optional path to extract location from for machine creation
         
         Returns:
             bool: True if upload successful, False otherwise
@@ -103,53 +108,259 @@ class SupabaseAdapter(DatabaseAdapter):
 
 
             if not url or not key:
-                print("Error: Supabase connection requires 'url' and 'key' parameters")
+                logger.error("Supabase connection requires 'url' and 'key' parameters")
                 return False
             
             self.client: Client = create_client(url, key)
             self.connected = True
-            print("Successfully connected to Supabase")
+            logger.info("Successfully connected to Supabase")
             return True
             
         except ImportError:
-            print("Error: supabase-py library not installed. Install with: pip install supabase")
+            logger.error("supabase-py library not installed. Install with: pip install supabase")
             return False
         except Exception as e:
-            print(f"Error connecting to Supabase: {e}")
+            logger.error(f"Error connecting to Supabase: {e}")
             self.connected = False
             return False
 
-    def upload_beam_data(self, table_name: str, data: Dict[str, Any]) -> bool:
+    def ensure_machine_exists(self, machine_id: str, path: str = None) -> bool:
+        """
+        Ensure a machine exists in the machines table before uploading beams.
+        Creates the machine if it doesn't exist.
+        
+        Args:
+            machine_id: The machine ID (serial number)
+            path: Optional path to extract location from (e.g., "/Volumes/Lexar/MPC Data/Arlington/...")
+        
+        Returns:
+            bool: True if machine exists or was created successfully, False otherwise
+        """
+        if not self.connected or not self.client:
+            logger.error("Not connected to Supabase")
+            return False
+        
+        try:
+            # Check if machine exists
+            response = self.client.table('machines').select('id').eq('id', machine_id).execute()
+            
+            if response.data and len(response.data) > 0:
+                logger.debug(f"Machine {machine_id} already exists")
+                return True
+            
+            # Machine doesn't exist, create it
+            logger.info(f"Creating machine {machine_id}...")
+            
+            # Extract location from path if provided
+            location = "Unknown"
+            if path:
+                # Try to extract location from path (e.g., "/Volumes/Lexar/MPC Data/Arlington/..." -> "Arlington")
+                path_parts = path.split(os.sep)
+                for part in path_parts:
+                    if part in ["Arlington", "Weatherford"]:
+                        location = part
+                        break
+            
+            # Create machine with default values
+            machine_data = {
+                'id': machine_id,
+                'name': f"Machine {machine_id}",
+                'location': location,
+                'type': 'NDS-WKS'  # Default type based on folder naming pattern
+            }
+            
+            response = self.client.table('machines').insert(machine_data).execute()
+            
+            if response.data:
+                logger.info(f"Created machine {machine_id} in location {location}")
+                return True
+            else:
+                logger.warning(f"No data returned when creating machine {machine_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error ensuring machine exists: {e}", exc_info=True)
+            return False
+
+    def upload_beam_data(self, table_name: str, data: Dict[str, Any], path: str = None) -> bool:
         """
         Upload beam data to Supabase table.
         
         Args:
             table_name: Name of the Supabase table
             data: Dictionary containing the data to upload
+            path: Optional path to extract location from for machine creation
         
         Returns:
             bool: True if upload successful, False otherwise
         """
         if not self.connected or not self.client:
-            print("Error: Not connected to Supabase")
+            logger.error("Not connected to Supabase")
             return False
         
         try:
+            # Ensure machine exists before uploading beam
+            machine_id = data.get('machineId')
+            if machine_id:
+                if not self.ensure_machine_exists(machine_id, path):
+                    logger.warning(f"Could not ensure machine {machine_id} exists, but continuing with upload attempt")
+            
             # Convert Decimal to float for JSON serialization
             serialized_data = self._serialize_data(data)
+            logger.debug(f"Uploading data to {table_name}: {serialized_data}")
             
             # Insert data into Supabase table
             response = self.client.table(table_name).insert(serialized_data).execute()
             
             if response.data:
-                print(f"Successfully uploaded data to {table_name}")
+                logger.info(f"Successfully uploaded data to {table_name}")
                 return True
             else:
-                print(f"Warning: No data returned from Supabase insert")
+                logger.warning("No data returned from Supabase insert")
                 return False
                 
         except Exception as e:
-            print(f"Error uploading data to Supabase: {e}")
+            logger.error(f"Error uploading data to Supabase: {e}", exc_info=True)
+            return False
+
+    def upload_geocheck_data(self, data: Dict[str, Any], path: str = None) -> Optional[str]:
+        """
+        Upload geometry check data to geochecks table.
+        Note: MLC leaves and backlash should NOT be included here - they go to separate tables.
+        
+        Args:
+            data: Dictionary containing the geocheck data to upload (geometry data only: jaws, couch, gantry, etc.)
+            path: Optional path to extract location from for machine creation
+        
+        Returns:
+            str: The geocheck_id if upload successful, None otherwise
+        """
+        if not self.connected or not self.client:
+            logger.error("Not connected to Supabase")
+            return None
+        
+        try:
+            # Ensure machine exists before uploading geocheck
+            machine_id = data.get('machine_id')
+            if machine_id:
+                if not self.ensure_machine_exists(machine_id, path):
+                    logger.warning(f"Could not ensure machine {machine_id} exists, but continuing with upload attempt")
+            
+            # Remove MLC data if accidentally included (it goes to separate tables)
+            data.pop('mlc_leaves_a', None)
+            data.pop('mlc_leaves_b', None)
+            data.pop('mlc_backlash_a', None)
+            data.pop('mlc_backlash_b', None)
+            
+            # Convert Decimal to float for JSON serialization
+            serialized_data = self._serialize_data(data)
+            logger.debug(f"Uploading geocheck data: {serialized_data}")
+            
+            # Insert data into geochecks table
+            response = self.client.table('geochecks').insert(serialized_data).execute()
+            
+            if response.data and len(response.data) > 0:
+                geocheck_id = response.data[0].get('id')
+                logger.info(f"Successfully uploaded geocheck data with id: {geocheck_id}")
+                return geocheck_id
+            else:
+                logger.warning("No data returned from Supabase geocheck insert")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error uploading geocheck data to Supabase: {e}", exc_info=True)
+            return None
+
+    def upload_mlc_leaves(self, geocheck_id: str, leaves_data: list, bank: str) -> bool:
+        """
+        Upload MLC leaves data to geocheck_mlc_leaves_a or geocheck_mlc_leaves_b table.
+        
+        Args:
+            geocheck_id: The geocheck ID to associate leaves with
+            leaves_data: List of dictionaries with 'leaf_number' and 'leaf_value'
+            bank: Either 'a' or 'b' to determine which table to use
+        
+        Returns:
+            bool: True if all leaves uploaded successfully, False otherwise
+        """
+        if not self.connected or not self.client:
+            logger.error("Not connected to Supabase")
+            return False
+        
+        if not geocheck_id or not leaves_data:
+            return False
+        
+        table_name = f'geocheck_mlc_leaves_{bank.lower()}'
+        
+        try:
+            # Prepare data with geocheck_id
+            upload_data = []
+            for leaf in leaves_data:
+                leaf_record = {
+                    'geocheck_id': geocheck_id,
+                    'leaf_number': leaf.get('leaf_number'),
+                    'leaf_value': float(leaf.get('leaf_value')) if leaf.get('leaf_value') is not None else None
+                }
+                upload_data.append(leaf_record)
+            
+            # Insert all leaves at once
+            response = self.client.table(table_name).insert(upload_data).execute()
+            
+            if response.data:
+                logger.info(f"Successfully uploaded {len(upload_data)} MLC leaves to {table_name}")
+                return True
+            else:
+                logger.warning(f"No data returned from {table_name} insert")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error uploading MLC leaves to {table_name}: {e}", exc_info=True)
+            return False
+
+    def upload_mlc_backlash(self, geocheck_id: str, backlash_data: list, bank: str) -> bool:
+        """
+        Upload MLC backlash data to geocheck_mlc_backlash_a or geocheck_mlc_backlash_b table.
+        
+        Args:
+            geocheck_id: The geocheck ID to associate backlash with
+            backlash_data: List of dictionaries with 'leaf_number' and 'backlash_value'
+            bank: Either 'a' or 'b' to determine which table to use
+        
+        Returns:
+            bool: True if all backlash data uploaded successfully, False otherwise
+        """
+        if not self.connected or not self.client:
+            logger.error("Not connected to Supabase")
+            return False
+        
+        if not geocheck_id or not backlash_data:
+            return False
+        
+        table_name = f'geocheck_mlc_backlash_{bank.lower()}'
+        
+        try:
+            # Prepare data with geocheck_id
+            upload_data = []
+            for backlash in backlash_data:
+                backlash_record = {
+                    'geocheck_id': geocheck_id,
+                    'leaf_number': backlash.get('leaf_number'),
+                    'backlash_value': float(backlash.get('backlash_value')) if backlash.get('backlash_value') is not None else None
+                }
+                upload_data.append(backlash_record)
+            
+            # Insert all backlash records at once
+            response = self.client.table(table_name).insert(upload_data).execute()
+            
+            if response.data:
+                logger.info(f"Successfully uploaded {len(upload_data)} MLC backlash records to {table_name}")
+                return True
+            else:
+                logger.warning(f"No data returned from {table_name} insert")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error uploading MLC backlash to {table_name}: {e}", exc_info=True)
             return False
 
     def _serialize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -166,7 +377,8 @@ class SupabaseAdapter(DatabaseAdapter):
         for key, value in data.items():
             if isinstance(value, Decimal):
                 serialized[key] = float(value)
-            elif isinstance(value, datetime):
+            elif isinstance(value, (datetime, date)):
+                # Convert both datetime and date objects to ISO format strings
                 serialized[key] = value.isoformat()
             elif value is None:
                 serialized[key] = None
@@ -178,7 +390,7 @@ class SupabaseAdapter(DatabaseAdapter):
         """Close the Supabase connection."""
         self.client = None
         self.connected = False
-        print("Supabase connection closed")
+        logger.info("Supabase connection closed")
 
 
 class Uploader:
@@ -212,6 +424,14 @@ class Uploader:
         self.connected = self.db_adapter.connect(connection_params)
         return self.connected
 
+    def close(self):
+        """
+        Close the database connection using the adapter.
+        """
+        if self.db_adapter:
+            self.db_adapter.close()
+        self.connected = False
+
     def upload(self, model):
         """
         Automatically calls the correct upload method
@@ -223,7 +443,7 @@ class Uploader:
             - Geo6xfffModel
         """
         if not self.connected:
-            print("Error: Not connected to database. Call connect() first.")
+            logger.error("Not connected to database. Call connect() first.")
             return False
 
         model_type = type(model).__name__.lower()
@@ -321,7 +541,7 @@ class Uploader:
             - Geo6xfffModel
         """
         if not self.connected:
-            print("Error: Not connected to database. Call connect() first.")
+            logger.error("Not connected to database. Call connect() first.")
             return False
 
         model_type = type(model).__name__.lower()
@@ -364,7 +584,7 @@ class Uploader:
                 return self.db_adapter.upload_beam_data('beam', data)
 
         except Exception as e:
-            print(f"Error during E-beam upload: {e}")
+            logger.error(f"Error during E-beam upload: {e}", exc_info=True)
             return False
 
 
@@ -397,7 +617,7 @@ class Uploader:
                 return self.db_adapter.upload_beam_data('beam', data)
 
         except Exception as e:
-            print(f"Error during X-beam upload: {e}")
+            logger.error(f"Error during X-beam upload: {e}", exc_info=True)
             return False
 
 
@@ -438,102 +658,102 @@ class Uploader:
             # Uncomment when geometry_data table is created
             # ========================================================================
             
-            # # ---- Extract IsoCenterGroup data ----
-            # isocenter_data = {
-            #     'beam_id': result_id,  # Foreign key to beam table
-            #     'isoCenterSize': geoModel.get_IsoCenterSize(),
-            #     'isoCenterMVOffset': geoModel.get_IsoCenterMVOffset(),
-            #     'isoCenterKVOffset': geoModel.get_IsoCenterKVOffset(),
-            # }
-            # 
-            # # ---- Extract CollimationGroup data ----
-            # collimation_data = {
-            #     'beam_id': result_id,
-            #     'collimationRotationOffset': geoModel.get_CollimationRotationOffset(),
-            # }
-            # 
-            # # ---- Extract GantryGroup data ----
-            # gantry_data = {
-            #     'beam_id': result_id,
-            #     'gantryAbsolute': geoModel.get_GantryAbsolute(),
-            #     'gantryRelative': geoModel.get_GantryRelative(),
-            # }
-            # 
-            # # ---- Extract EnhancedCouchGroup data ----
-            # couch_data = {
-            #     'beam_id': result_id,
-            #     'couchMaxPositionError': geoModel.get_CouchMaxPositionError(),
-            #     'couchLat': geoModel.get_CouchLat(),
-            #     'couchLng': geoModel.get_CouchLng(),
-            #     'couchVrt': geoModel.get_CouchVrt(),
-            #     'couchRtnFine': geoModel.get_CouchRtnFine(),
-            #     'couchRtnLarge': geoModel.get_CouchRtnLarge(),
-            #     'rotationInducedCouchShiftFullRange': geoModel.get_RotationInducedCouchShiftFullRange(),
-            # }
-            # 
-            # # ---- Extract MLC Leaves data (A and B banks, leaves 11-50) ----
-            # mlc_leaves_a = {}
-            # mlc_leaves_b = {}
-            # for i in range(11, 51):
-            #     mlc_leaves_a[f"leaf_{i}"] = geoModel.get_MLCLeafA(i)
-            #     mlc_leaves_b[f"leaf_{i}"] = geoModel.get_MLCLeafB(i)
-            # 
-            # # ---- Extract MLC Offsets ----
-            # mlc_offset_data = {
-            #     'beam_id': result_id,
-            #     'mlcMaxOffsetA': geoModel.get_MaxOffsetA(),
-            #     'mlcMaxOffsetB': geoModel.get_MaxOffsetB(),
-            #     'mlcMeanOffsetA': geoModel.get_MeanOffsetA(),
-            #     'mlcMeanOffsetB': geoModel.get_MeanOffsetB(),
-            #     'mlcLeavesA': json.dumps(mlc_leaves_a),  # Store as JSONB
-            #     'mlcLeavesB': json.dumps(mlc_leaves_b),  # Store as JSONB
-            # }
-            # 
-            # # ---- Extract MLC Backlash data (A and B banks, leaves 11-50) ----
-            # mlc_backlash_a = {}
-            # mlc_backlash_b = {}
-            # for i in range(11, 51):
-            #     mlc_backlash_a[f"leaf_{i}"] = geoModel.get_MLCBacklashA(i)
-            #     mlc_backlash_b[f"leaf_{i}"] = geoModel.get_MLCBacklashB(i)
-            # 
-            # mlc_backlash_data = {
-            #     'beam_id': result_id,
-            #     'mlcBacklashMaxA': geoModel.get_MLCBacklashMaxA(),
-            #     'mlcBacklashMaxB': geoModel.get_MLCBacklashMaxB(),
-            #     'mlcBacklashMeanA': geoModel.get_MLCBacklashMeanA(),
-            #     'mlcBacklashMeanB': geoModel.get_MLCBacklashMeanB(),
-            #     'mlcBacklashA': json.dumps(mlc_backlash_a),  # Store as JSONB
-            #     'mlcBacklashB': json.dumps(mlc_backlash_b),  # Store as JSONB
-            # }
-            # 
-            # # ---- Extract Jaws data ----
-            # jaws_data = {
-            #     'beam_id': result_id,
-            #     'jawX1': geoModel.get_JawX1(),
-            #     'jawX2': geoModel.get_JawX2(),
-            #     'jawY1': geoModel.get_JawY1(),
-            #     'jawY2': geoModel.get_JawY2(),
-            # }
-            # 
-            # # ---- Extract Jaw Parallelism data ----
-            # jaw_parallelism_data = {
-            #     'beam_id': result_id,
-            #     'jawParallelismX1': geoModel.get_JawParallelismX1(),
-            #     'jawParallelismX2': geoModel.get_JawParallelismX2(),
-            #     'jawParallelismY1': geoModel.get_JawParallelismY1(),
-            #     'jawParallelismY2': geoModel.get_JawParallelismY2(),
-            # }
-            # 
-            # # ---- Upload to geometry tables ----
-            # # Uncomment and adjust table names when geometry tables are created
-            # # self.db_adapter.upload_beam_data('geometry_isocenter', isocenter_data)
-            # # self.db_adapter.upload_beam_data('geometry_collimation', collimation_data)
-            # # self.db_adapter.upload_beam_data('geometry_gantry', gantry_data)
-            # # self.db_adapter.upload_beam_data('geometry_couch', couch_data)
-            # # self.db_adapter.upload_beam_data('geometry_mlc', mlc_offset_data)
-            # # self.db_adapter.upload_beam_data('geometry_mlc_backlash', mlc_backlash_data)
-            # # self.db_adapter.upload_beam_data('geometry_jaws', jaws_data)
-            # # self.db_adapter.upload_beam_data('geometry_jaw_parallelism', jaw_parallelism_data)
+            # ---- Extract IsoCenterGroup data ----
+            isocenter_data = {
+                'beam_id': result_id,  # Foreign key to beam table
+                'isoCenterSize': geoModel.get_IsoCenterSize(),
+                'isoCenterMVOffset': geoModel.get_IsoCenterMVOffset(),
+                'isoCenterKVOffset': geoModel.get_IsoCenterKVOffset(),
+            }
+            
+            # ---- Extract CollimationGroup data ----
+            collimation_data = {
+                'beam_id': result_id,
+                'collimationRotationOffset': geoModel.get_CollimationRotationOffset(),
+            }
+            
+            # ---- Extract GantryGroup data ----
+            gantry_data = {
+                'beam_id': result_id,
+                'gantryAbsolute': geoModel.get_GantryAbsolute(),
+                'gantryRelative': geoModel.get_GantryRelative(),
+            }
+            
+            # ---- Extract EnhancedCouchGroup data ----
+            couch_data = {
+                'beam_id': result_id,
+                'couchMaxPositionError': geoModel.get_CouchMaxPositionError(),
+                'couchLat': geoModel.get_CouchLat(),
+                'couchLng': geoModel.get_CouchLng(),
+                'couchVrt': geoModel.get_CouchVrt(),
+                'couchRtnFine': geoModel.get_CouchRtnFine(),
+                'couchRtnLarge': geoModel.get_CouchRtnLarge(),
+                'rotationInducedCouchShiftFullRange': geoModel.get_RotationInducedCouchShiftFullRange(),
+            }
+            
+            # ---- Extract MLC Leaves data (A and B banks, leaves 11-50) ----
+            mlc_leaves_a = {}
+            mlc_leaves_b = {}
+            for i in range(11, 51):
+                mlc_leaves_a[f"leaf_{i}"] = geoModel.get_MLCLeafA(i)
+                mlc_leaves_b[f"leaf_{i}"] = geoModel.get_MLCLeafB(i)
+            
+            # ---- Extract MLC Offsets ----
+            mlc_offset_data = {
+                'beam_id': result_id,
+                'mlcMaxOffsetA': geoModel.get_MaxOffsetA(),
+                'mlcMaxOffsetB': geoModel.get_MaxOffsetB(),
+                'mlcMeanOffsetA': geoModel.get_MeanOffsetA(),
+                'mlcMeanOffsetB': geoModel.get_MeanOffsetB(),
+                'mlcLeavesA': json.dumps(mlc_leaves_a),  # Store as JSONB
+                'mlcLeavesB': json.dumps(mlc_leaves_b),  # Store as JSONB
+            }
+            
+            # ---- Extract MLC Backlash data (A and B banks, leaves 11-50) ----
+            mlc_backlash_a = {}
+            mlc_backlash_b = {}
+            for i in range(11, 51):
+                mlc_backlash_a[f"leaf_{i}"] = geoModel.get_MLCBacklashA(i)
+                mlc_backlash_b[f"leaf_{i}"] = geoModel.get_MLCBacklashB(i)
+            
+            mlc_backlash_data = {
+                'beam_id': result_id,
+                'mlcBacklashMaxA': geoModel.get_MLCBacklashMaxA(),
+                'mlcBacklashMaxB': geoModel.get_MLCBacklashMaxB(),
+                'mlcBacklashMeanA': geoModel.get_MLCBacklashMeanA(),
+                'mlcBacklashMeanB': geoModel.get_MLCBacklashMeanB(),
+                'mlcBacklashA': json.dumps(mlc_backlash_a),  # Store as JSONB
+                'mlcBacklashB': json.dumps(mlc_backlash_b),  # Store as JSONB
+            }
+            
+            # ---- Extract Jaws data ----
+            jaws_data = {
+                'beam_id': result_id,
+                'jawX1': geoModel.get_JawX1(),
+                'jawX2': geoModel.get_JawX2(),
+                'jawY1': geoModel.get_JawY1(),
+                'jawY2': geoModel.get_JawY2(),
+            }
+            
+            # ---- Extract Jaw Parallelism data ----
+            jaw_parallelism_data = {
+                'beam_id': result_id,
+                'jawParallelismX1': geoModel.get_JawParallelismX1(),
+                'jawParallelismX2': geoModel.get_JawParallelismX2(),
+                'jawParallelismY1': geoModel.get_JawParallelismY1(),
+                'jawParallelismY2': geoModel.get_JawParallelismY2(),
+            }
+            
+            # ---- Upload to geometry tables ----
+            # Uncomment and adjust table names when geometry tables are created
+            self.db_adapter.upload_beam_data('geometry_isocenter', isocenter_data)
+            self.db_adapter.upload_beam_data('geometry_collimation', collimation_data)
+            self.db_adapter.upload_beam_data('geometry_gantry', gantry_data)
+            self.db_adapter.upload_beam_data('geometry_couch', couch_data)
+            self.db_adapter.upload_beam_data('geometry_mlc', mlc_offset_data)
+            self.db_adapter.upload_beam_data('geometry_mlc_backlash', mlc_backlash_data)
+            self.db_adapter.upload_beam_data('geometry_jaws', jaws_data)
+            self.db_adapter.upload_beam_data('geometry_jaw_parallelism', jaw_parallelism_data)
             
             # ========================================================================
             # END OF COMMENTED GEOMETRY DATA
@@ -542,7 +762,7 @@ class Uploader:
             return result
 
         except Exception as e:
-            print(f"Error during Geo model upload: {e}")
+            logger.error(f"Error during Geo model upload: {e}", exc_info=True)
             return False
 
     def uploadMLCLeaves(self, geoModel, table_name: str = 'mlc_leaves_data'):
@@ -554,23 +774,21 @@ class Uploader:
         try:
             leaves_data = []
             
-            # Collect all MLC leaf A data
-            for i in range(11, 51):
+            # Collect all MLC leaf A data (leaves 1-60)
+            for i in range(1, 61):
                 leaves_data.append({
                     'date': geoModel.get_date(),
                     'machine_sn': geoModel.get_machine_SN(),
-                    'beam_type': geoModel.get_type(),
                     'leaf_bank': 'A',
                     'leaf_index': i,
                     'leaf_value': geoModel.get_MLCLeafA(i),
                 })
             
-            # Collect all MLC leaf B data
-            for i in range(11, 51):
+            # Collect all MLC leaf B data (leaves 1-60)
+            for i in range(1, 61):
                 leaves_data.append({
                     'date': geoModel.get_date(),
                     'machine_sn': geoModel.get_machine_SN(),
-                    'beam_type': geoModel.get_type(),
                     'leaf_bank': 'B',
                     'leaf_index': i,
                     'leaf_value': geoModel.get_MLCLeafB(i),
@@ -582,11 +800,11 @@ class Uploader:
                 if self.db_adapter.upload_beam_data(table_name, leaf_data):
                     success_count += 1
             
-            print(f"Uploaded {success_count}/{len(leaves_data)} MLC leaf records")
+            logger.info(f"Uploaded {success_count}/{len(leaves_data)} MLC leaf records")
             return success_count == len(leaves_data)
 
         except Exception as e:
-            print(f"Error uploading MLC leaves: {e}")
+            logger.error(f"Error uploading MLC leaves: {e}", exc_info=True)
             return False
 
     def uploadMLCBacklash(self, geoModel, table_name: str = 'mlc_backlash_data'):
@@ -598,23 +816,21 @@ class Uploader:
         try:
             backlash_data = []
             
-            # Collect all MLC backlash A data
-            for i in range(11, 51):
+            # Collect all MLC backlash A data (leaves 1-60)
+            for i in range(1, 61):
                 backlash_data.append({
                     'date': geoModel.get_date(),
                     'machine_sn': geoModel.get_machine_SN(),
-                    'beam_type': geoModel.get_type(),
                     'leaf_bank': 'A',
                     'leaf_index': i,
                     'backlash_value': geoModel.get_MLCBacklashA(i),
                 })
             
-            # Collect all MLC backlash B data
-            for i in range(11, 51):
+            # Collect all MLC backlash B data (leaves 1-60)
+            for i in range(1, 61):
                 backlash_data.append({
                     'date': geoModel.get_date(),
                     'machine_sn': geoModel.get_machine_SN(),
-                    'beam_type': geoModel.get_type(),
                     'leaf_bank': 'B',
                     'leaf_index': i,
                     'backlash_value': geoModel.get_MLCBacklashB(i),
@@ -626,14 +842,16 @@ class Uploader:
                 if self.db_adapter.upload_beam_data(table_name, backlash_record):
                     success_count += 1
             
-            print(f"Uploaded {success_count}/{len(backlash_data)} MLC backlash records")
+            logger.info(f"Uploaded {success_count}/{len(backlash_data)} MLC backlash records")
             return success_count == len(backlash_data)
 
         except Exception as e:
-            print(f"Error uploading MLC backlash: {e}")
+            logger.error(f"Error uploading MLC backlash: {e}", exc_info=True)
             return False
 
     def close(self):
         """Close the database connection."""
-        self.db_adapter.close()
-        self.connected = False
+        if self.db_adapter and hasattr(self.db_adapter, 'close'):
+            self.db_adapter.close()
+
+

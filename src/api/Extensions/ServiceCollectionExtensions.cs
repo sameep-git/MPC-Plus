@@ -132,5 +132,63 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IBeamRepository>(provider => provider.GetRequiredService<InMemoryBeamRepository>());
         return services;
     }
+
+    public static IServiceCollection AddUpdateDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<SupabaseSettings>(configuration.GetSection(SupabaseSettings.SectionName));
+
+        services.AddScoped<IUpdateRepository>(provider =>
+        {
+            var settings = provider.GetRequiredService<IOptions<SupabaseSettings>>().Value;
+            var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+            if (string.IsNullOrWhiteSpace(settings.Url) || string.IsNullOrWhiteSpace(settings.Key))
+            {
+                throw new InvalidOperationException("Supabase credentials are required for Update repository.");
+            }
+
+            var options = new SupabaseOptions
+            {
+                AutoConnectRealtime = false
+            };
+
+            var client = new Client(settings.Url, settings.Key, options);
+            client.InitializeAsync().GetAwaiter().GetResult();
+
+            var logger = loggerFactory.CreateLogger<SupabaseUpdateRepository>();
+            return new SupabaseUpdateRepository(client, logger);
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddGeoCheckDataAccess(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<SupabaseSettings>(configuration.GetSection(SupabaseSettings.SectionName));
+
+        services.AddScoped<IGeoCheckRepository>(provider =>
+        {
+            var settings = provider.GetRequiredService<IOptions<SupabaseSettings>>().Value;
+            var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+            if (string.IsNullOrWhiteSpace(settings.Url) || string.IsNullOrWhiteSpace(settings.Key))
+            {
+                throw new InvalidOperationException("Supabase credentials are required for GeoCheck repository.");
+            }
+
+            var options = new SupabaseOptions
+            {
+                AutoConnectRealtime = false
+            };
+
+            var client = new Client(settings.Url, settings.Key, options);
+            client.InitializeAsync().GetAwaiter().GetResult();
+
+            var logger = loggerFactory.CreateLogger<SupabaseGeoCheckRepository>();
+            return new SupabaseGeoCheckRepository(client, logger);
+        });
+
+        return services;
+    }
 }
 

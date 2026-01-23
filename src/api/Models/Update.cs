@@ -9,7 +9,7 @@ public class Update
     public required string Id { get; set; }
 
     /// <summary>Associated machine.</summary>
-    public required string Machine { get; set; }
+    public required string MachineId { get; set; }
 
     /// <summary>Update information.</summary>
     public required string Info { get; set; }
