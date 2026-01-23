@@ -154,8 +154,12 @@ class DataProcessor:
                         "url": os.getenv("SUPABASE_URL"),
                         "key": os.getenv("SUPABASE_KEY"),
                     }
-                    self.up.connect(connection_params)
-                    self.up.upload(beam)
+                    if(not self.up.connect(connection_params)):
+                        logger.error("Unable at connect to the database")
+                        return
+                    if(not self.up.upload(beam)):
+                        logger.error("Cannot upload to the database")
+                        return
                     logger.info("Beam Uploading Complete")
                     self.up.close()
                 return
