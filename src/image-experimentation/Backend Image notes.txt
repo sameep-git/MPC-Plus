@@ -54,3 +54,18 @@ Thursday - F & S to beam model:
 -Beam processor/Data processor call image processor
 -Commit
 -Uploader to adopt F & S  
+
+
+Friday Meeting Notes:
+
+Change all prints to loggers
+Verify connection works
+Look at Geo Checkks in Uploader.py
+Line 150-187 Dataprocessor, need more error handling
+Fix relative imports
+Recognize 2.5x
+
+Get mini graphs to DB
+Uploader to adopt F & S
+Upload Images
+Recognize 2.5x adn 10xFFF beam (need 10xFFF data)
