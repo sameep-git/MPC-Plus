@@ -107,6 +107,7 @@ class DataProcessor:
             "9e": (EBeamModel, "9e"),
             "12e": (EBeamModel, "12e"),
             "16e": (EBeamModel, "16e"),
+            "2.5x": (XBeamModel, "2.5x"),
             "10x": (XBeamModel, "10x"),
             "15x": (XBeamModel, "15x"),
             "6x": (Geo6xfffModel, "6x"),  # Geometry checks use 6x as the beam type

@@ -20,16 +20,19 @@ import os
 def main():
     load_dotenv()
     ##Unsure but i think for window the slashes are a different direction
-    # ##TODO: Make this more flexible for different operating systems
     # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
     # dp = DataProcessor(path)
     # dp.RunTest()
-    # print("----------------------------------------------------------------")
+    # print("----------------------15x Beam Test--------------------------------")
     # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x"
     # dp = DataProcessor(path)
     # dp.RunTest()
-    print("-------------------------Geo Check----------------------------------")
-    path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch"
+    # print("-------------------------Geo Check----------------------------------")
+    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch"
+    # dp = DataProcessor(path)
+    # dp.RunTest()
+    print("-------------------------2.5x Beam Test----------------------------------")
+    path = r"data\csv_data\NDS-WKS-SN6543-2015-09-18-08-06-01-0000-BeamCheckTemplate2.5x"
     dp = DataProcessor(path)
     dp.Run()
     # print("--------------------Image Processing Test----------------------------")
