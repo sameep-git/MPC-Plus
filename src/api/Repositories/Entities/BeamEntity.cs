@@ -37,10 +37,10 @@ public class BeamEntity : BaseModel
     [Column("note")]
     public string? Note { get; set; }
 
-    [Column("accepted_by")]
+    [Column("approved_by")]
     public string? AcceptedBy { get; set; }
 
-    [Column("accepted_date")]
+    [Column("approved_date")]
     public DateTime? AcceptedDate { get; set; }
 
     [Column("timestamp")]

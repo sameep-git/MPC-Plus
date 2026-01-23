@@ -31,9 +31,14 @@ builder.Services.AddMachineDataAccess(builder.Configuration);
 builder.Services.AddBeamDataAccess(builder.Configuration);
 builder.Services.AddUpdateDataAccess(builder.Configuration);
 builder.Services.AddGeoCheckDataAccess(builder.Configuration);
+builder.Services.AddThresholdDataAccess(builder.Configuration);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
 builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>
