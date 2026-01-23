@@ -19,8 +19,8 @@ public class SupabaseBeamRepository : IBeamRepository
     }
 
     public async Task<IReadOnlyList<Beam>> GetAllAsync(
-        string? machineId = null, string? type = null, DateOnly? date = null,
-        DateOnly? startDate = null, DateOnly? endDate = null,
+        string? machineId = null, string? type = null, DateTime? date = null,
+        DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -34,11 +34,11 @@ public class SupabaseBeamRepository : IBeamRepository
             if (!string.IsNullOrWhiteSpace(type))
                 beams = beams.Where(b => b.Type == type).ToList();
             if (date.HasValue)
-                beams = beams.Where(b => b.Date == date.Value).ToList();
+                beams = beams.Where(b => b.Date.Date == date.Value.Date).ToList();
             if (startDate.HasValue)
-                beams = beams.Where(b => b.Date >= startDate.Value).ToList();
+                beams = beams.Where(b => b.Date.Date >= startDate.Value.Date).ToList();
             if (endDate.HasValue)
-                beams = beams.Where(b => b.Date <= endDate.Value).ToList();
+                beams = beams.Where(b => b.Date.Date <= endDate.Value.Date).ToList();
             
             return beams.OrderByDescending(b => b.Date).ThenBy(b => b.Type).ToList().AsReadOnly();
         }

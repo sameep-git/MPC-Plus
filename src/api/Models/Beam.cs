@@ -12,7 +12,7 @@ public class Beam
     public required string Type { get; set; }
 
     /// <summary>Date of the beam data.</summary>
-    public required DateOnly Date { get; set; }
+    public required DateTime Date { get; set; }
 
     /// <summary>File path to the beam data.</summary>
     public string? Path { get; set; }

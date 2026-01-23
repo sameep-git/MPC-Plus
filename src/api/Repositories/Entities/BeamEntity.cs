@@ -17,7 +17,7 @@ public class BeamEntity : BaseModel
     public string Type { get; set; } = default!;
 
     [Column("date")]
-    public DateOnly Date { get; set; }
+    public DateTime Date { get; set; }
 
     [Column("path")]
     public string? Path { get; set; }

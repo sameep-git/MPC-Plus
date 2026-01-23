@@ -12,7 +12,7 @@ public class GeoCheck
     public required string Type { get; set; }
 
     /// <summary>Date of the geometry check.</summary>
-    public required DateOnly Date { get; set; }
+    public required DateTime Date { get; set; }
 
     /// <summary>Associated machine identifier.</summary>
     public required string MachineId { get; set; }

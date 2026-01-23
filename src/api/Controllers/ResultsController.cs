@@ -43,10 +43,19 @@ public class ResultsController : ControllerBase
         }
 
         // Get all beam checks for this machine, month, and year
-        var startDate = new DateOnly(year, month, 1);
+        var startDate = new DateTime(year, month, 1);
         var endDate = month == 12 
-            ? new DateOnly(year + 1, 1, 1).AddDays(-1)
-            : new DateOnly(year, month + 1, 1).AddDays(-1);
+            ? new DateTime(year + 1, 1, 1).AddDays(-1).AddTicks(-1) // End of last day of month? Or just cover the day.
+            // Actually Repositories usually check date equality or range. 
+            // If we want the whole month, we should probably set time to end of day if time matters.
+            // But let's stick to start of day for boundaries if repositories treat them inclusively?
+            // The repositories use Date >= startDate and Date <= endDate.
+            // To capture everything in the month, startDate should be YYYY-MM-01 00:00:00
+            // endDate should be YYYY-MM-Last 23:59:59 OR YYYY-(M+1)-01 00:00:00 exclusive.
+            // But the repository logic is: b.Date.Date >= startDate.Value.Date
+            // and b.Date.Date <= endDate.Value.Date.
+            // This compares just the dates. So using start of day is correct.
+            : new DateTime(year, month + 1, 1).AddDays(-1);
         
         var beamChecks = await _beamRepository.GetAllAsync(
             machineId: machineId,
@@ -66,7 +75,7 @@ public class ResultsController : ControllerBase
         // Process beam checks
         foreach (var check in beamChecks)
         {
-            var date = check.Date;
+            var date = DateOnly.FromDateTime(check.Date);
             var status = DetermineCheckStatus(check);
             // derive a single numeric value for display (prefer RelOutput, then RelUniformity, then CenterShift)
             double? value = check.RelOutput ?? check.RelUniformity ?? check.CenterShift;
@@ -85,7 +94,7 @@ public class ResultsController : ControllerBase
         // Process geometry checks
         foreach (var check in geoChecks)
         {
-            var date = check.Date;
+            var date = DateOnly.FromDateTime(check.Date);
             var status = DetermineGeoCheckStatus(check);
             // derive a single numeric value for display (prefer RelativeOutput, then RelativeUniformity, then CenterShift, then IsoCenterSize)
             double? value = check.RelativeOutput ?? check.RelativeUniformity ?? check.CenterShift ?? check.IsoCenterSize;

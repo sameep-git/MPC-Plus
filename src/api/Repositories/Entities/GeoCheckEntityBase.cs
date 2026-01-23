@@ -17,7 +17,7 @@ public abstract class GeoCheckEntityBase : BaseModel
     public string Type { get; set; } = default!;
 
     [Column("date")]
-    public DateOnly Date { get; set; }
+    public DateTime Date { get; set; }
 
     [Column("machine_id")]
     public string MachineId { get; set; } = default!;

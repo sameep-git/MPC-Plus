@@ -24,24 +24,24 @@ public class BeamsController : ControllerBase
         [FromQuery] string? endDate = null,
         CancellationToken cancellationToken = default)
     {
-        DateOnly? dateOnly = null;
-        if (!string.IsNullOrWhiteSpace(date))
-            dateOnly = DateOnly.Parse(date);
+        DateTime? dateDt = null;
+        if (!string.IsNullOrWhiteSpace(date) && DateTime.TryParse(date, out var parsedDate))
+            dateDt = parsedDate;
 
-        DateOnly? startDateOnly = null;
-        if (!string.IsNullOrWhiteSpace(startDate))
-            startDateOnly = DateOnly.Parse(startDate);
+        DateTime? startDateDt = null;
+        if (!string.IsNullOrWhiteSpace(startDate) && DateTime.TryParse(startDate, out var parsedStartDate))
+            startDateDt = parsedStartDate;
 
-        DateOnly? endDateOnly = null;
-        if (!string.IsNullOrWhiteSpace(endDate))
-            endDateOnly = DateOnly.Parse(endDate);
+        DateTime? endDateDt = null;
+        if (!string.IsNullOrWhiteSpace(endDate) && DateTime.TryParse(endDate, out var parsedEndDate))
+            endDateDt = parsedEndDate;
 
         var beams = await _repository.GetAllAsync(
             machineId: machineId,
             type: type,
-            date: dateOnly,
-            startDate: startDateOnly,
-            endDate: endDateOnly,
+            date: dateDt,
+            startDate: startDateDt,
+            endDate: endDateDt,
             cancellationToken: cancellationToken);
 
         return Ok(beams);

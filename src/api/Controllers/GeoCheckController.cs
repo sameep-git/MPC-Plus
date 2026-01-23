@@ -29,42 +29,42 @@ public class GeoCheckController : ControllerBase
         [FromQuery(Name = "end-date")] string? endDate = null,
         CancellationToken cancellationToken = default)
     {
-        DateOnly? dateOnly = null;
+        DateTime? dateDt = null;
         if (!string.IsNullOrWhiteSpace(date))
         {
-            if (!DateOnly.TryParse(date, out var parsedDate))
+            if (!DateTime.TryParse(date, out var parsedDate))
             {
                 return BadRequest($"Invalid date format: {date}");
             }
-            dateOnly = parsedDate;
+            dateDt = parsedDate;
         }
 
-        DateOnly? startDateOnly = null;
+        DateTime? startDateDt = null;
         if (!string.IsNullOrWhiteSpace(startDate))
         {
-            if (!DateOnly.TryParse(startDate, out var parsedStartDate))
+            if (!DateTime.TryParse(startDate, out var parsedStartDate))
             {
                 return BadRequest($"Invalid start-date format: {startDate}");
             }
-            startDateOnly = parsedStartDate;
+            startDateDt = parsedStartDate;
         }
 
-        DateOnly? endDateOnly = null;
+        DateTime? endDateDt = null;
         if (!string.IsNullOrWhiteSpace(endDate))
         {
-            if (!DateOnly.TryParse(endDate, out var parsedEndDate))
+            if (!DateTime.TryParse(endDate, out var parsedEndDate))
             {
                 return BadRequest($"Invalid end-date format: {endDate}");
             }
-            endDateOnly = parsedEndDate;
+            endDateDt = parsedEndDate;
         }
 
         var geoChecks = await _repository.GetAllAsync(
             machineId: machineId,
             type: type,
-            date: dateOnly,
-            startDate: startDateOnly,
-            endDate: endDateOnly,
+            date: dateDt,
+            startDate: startDateDt,
+            endDate: endDateDt,
             cancellationToken: cancellationToken);
 
         return Ok(geoChecks);

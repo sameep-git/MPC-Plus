@@ -21,9 +21,9 @@ public class SupabaseGeoCheckRepository : IGeoCheckRepository
     public async Task<IReadOnlyList<GeoCheck>> GetAllAsync(
         string? machineId = null,
         string? type = null,
-        DateOnly? date = null,
-        DateOnly? startDate = null,
-        DateOnly? endDate = null,
+        DateTime? date = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -37,11 +37,11 @@ public class SupabaseGeoCheckRepository : IGeoCheckRepository
             if (!string.IsNullOrWhiteSpace(type))
                 geoChecks = geoChecks.Where(g => g.Type == type).ToList();
             if (date.HasValue)
-                geoChecks = geoChecks.Where(g => g.Date == date.Value).ToList();
+                geoChecks = geoChecks.Where(g => g.Date.Date == date.Value.Date).ToList();
             if (startDate.HasValue)
-                geoChecks = geoChecks.Where(g => g.Date >= startDate.Value).ToList();
+                geoChecks = geoChecks.Where(g => g.Date.Date >= startDate.Value.Date).ToList();
             if (endDate.HasValue)
-                geoChecks = geoChecks.Where(g => g.Date <= endDate.Value).ToList();
+                geoChecks = geoChecks.Where(g => g.Date.Date <= endDate.Value.Date).ToList();
 
             return geoChecks.OrderByDescending(g => g.Date).ThenBy(g => g.Type).ToList().AsReadOnly();
         }
