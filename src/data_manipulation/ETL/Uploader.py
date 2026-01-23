@@ -480,7 +480,7 @@ class Uploader:
             # Prepare data dictionary mapped to 'beams' table schema
             data = {
                 'type': eBeam.get_type(),
-                'date': eBeam.get_date().date() if hasattr(eBeam.get_date(), 'date') else eBeam.get_date(),
+                'date': eBeam.get_date(),
                 'path': eBeam.get_path(),
                 'relOutput': float(eBeam.get_relative_output()) if eBeam.get_relative_output() else None,
                 'relUniformity': float(eBeam.get_relative_uniformity()) if eBeam.get_relative_uniformity() else None,
@@ -513,7 +513,7 @@ class Uploader:
             
             data = {
                 'type': xBeam.get_type(),
-                'date': xBeam.get_date().date() if hasattr(xBeam.get_date(), 'date') else xBeam.get_date(),
+                'date': xBeam.get_date(),
                 'path': xBeam.get_path(),
                 'relOutput': float(rel_output) if rel_output is not None else None,
                 'relUniformity': float(rel_uniformity) if rel_uniformity is not None else None,
@@ -547,7 +547,7 @@ class Uploader:
             
             beam_data = {
                 'type': geoModel.get_type(),  # "6x" - treated as an X-beam
-                'date': geoModel.get_date().date() if hasattr(geoModel.get_date(), 'date') else geoModel.get_date(),
+                'date': geoModel.get_date(),
                 'path': geoModel.get_path(),
                 'relOutput': float(rel_output) if rel_output is not None else None,
                 'relUniformity': float(rel_uniformity) if rel_uniformity is not None else None,
@@ -576,7 +576,7 @@ class Uploader:
             geocheck_data = {
                 'path': geoModel.get_path(),
                 'machine_id': geoModel.get_machine_SN(),
-                'date': geoModel.get_date().date() if hasattr(geoModel.get_date(), 'date') else geoModel.get_date(),
+                'date': geoModel.get_date(),
                 # IsoCenterGroup
                 'iso_center_size': float(geoModel.get_IsoCenterSize()) if geoModel.get_IsoCenterSize() is not None else None,
                 'iso_center_mv_offset': float(geoModel.get_IsoCenterMVOffset()) if geoModel.get_IsoCenterMVOffset() is not None else None,
