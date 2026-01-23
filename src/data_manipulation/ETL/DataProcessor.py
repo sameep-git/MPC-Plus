@@ -3,17 +3,18 @@ from pylinac.core.image import XIM
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
-from .data_extractor import data_extractor
-from .image_extractor import image_extractor
-from .Uploader import Uploader
+from src.data_manipulation.ETL.data_extractor import data_extractor
+from src.data_manipulation.ETL.image_extractor import image_extractor
+from src.data_manipulation.ETL.Uploader import Uploader
 
-from ..models.EBeamModel import EBeamModel
-from ..models.XBeamModel import XBeamModel
-from ..models.Geo6xfffModel import Geo6xfffModel
-from ..models.ImageModel import ImageModel
+from src.data_manipulation.models.EBeamModel import EBeamModel
+from src.data_manipulation.models.XBeamModel import XBeamModel
+from src.data_manipulation.models.Geo6xfffModel import Geo6xfffModel
+from src.data_manipulation.models.ImageModel import ImageModel
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
+
 
 # Load environment variables from .env file in project root
 project_root = Path(__file__).parent.parent.parent.parent
@@ -79,11 +80,12 @@ class DataProcessor:
         image.set_image(XIM(image.get_path()))
         image.convert_XIM_to_PNG()
         #Process the image (Get flatness and symmetry from Pilinac FieldAnalysis)
-        if is_test: print("Processing test image in image_extractor.py")
+        if is_test: logger.info("Processing test image in image_extractor.py")
         self.image_ex.process_image(image, is_test)
         if is_test: 
-            print("Test image processed & returned from image_extractor.py")
-            print("Image Name: ", image.get_image_name())
+            logger.info("Test image processed & returned from image_extractor.py")
+            logger.info("Image Name: %s", image.get_image_name())
+
         return image
 
     
@@ -127,7 +129,7 @@ class DataProcessor:
                 beam = self._init_beam_model(model_class, beam_type)
 
                 # --- Image Extraction for all beam types ---
-                print(f"Extracting image data for {beam_type} beam...")
+                logger.info(f"Extracting image data for {beam_type} beam...")
                 beam.set_image_model(self._init_beam_image(beam_type, is_test))
                 
                 ##Unsure of the cleanliness of this soln
@@ -139,7 +141,7 @@ class DataProcessor:
                 beam.set_flat_and_sym_vals_from_image()
 
                 if(is_test):
-                    print("Running test extraction...")
+                    logger.info("Running test extraction...")
                     self.data_ex.extractTest(beam)
                 else:
                     logger.info("Running normal extraction...")
@@ -154,14 +156,14 @@ class DataProcessor:
                     }
                     self.up.connect(connection_params)
                     self.up.upload(beam)
-                    print("Beam Uploading Complete")
+                    logger.info("Beam Uploading Complete")
                     self.up.close()
                 return
 
         # --- No beam type matched ---
-        print(f"Unknown or unsupported beam type for path: {self.data_path}")
-        print("Ensure the folder name includes one of the supported identifiers:")
-        print("→ 6e, 9e, 12e, 16e, 10x, 15x, or 6x (6xfff)")
+        logger.error(f"Unknown or unsupported beam type for path: {self.data_path}")
+        logger.error("Ensure the folder name includes one of the supported identifiers:")
+        logger.error("→ 6e, 9e, 12e, 16e, 10x, 15x, or 6x (6xfff)")
 
     # -------------------------------------------------------------------------
     # Public entrypoints
@@ -171,7 +173,13 @@ class DataProcessor:
         self._process_beam(is_test=False)
 
     def RunTest(self):
-        """Run the test data processing workflow."""
+        """ Run the test data processing workflow.
+            For Testing Print logger.info to console
+        """
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         self._process_beam(is_test=True)
 
     

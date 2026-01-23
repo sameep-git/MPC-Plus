@@ -91,21 +91,8 @@ class SupabaseAdapter(DatabaseAdapter):
         """
         try:
             from supabase import create_client, Client
-            
-            # url = connection_params.get('url')
-            # key = connection_params.get('key')
-            # print("SUPABASE_URL =", os.getenv("SUPABASE_URL"))
-            # print("SUPABASE_URL:", url)
-
-            # connection_params = {
-            #     "url": os.getenv("SUPABASE_URL"),
-            #     "key": os.getenv("SUPABASE_KEY"),
-            # }
             url = connection_params.get('url')
             key = connection_params.get('key')
-            # print("SUPABASE_URL =", os.getenv("SUPABASE_URL"))
-            # print("SUPABASE_URL:", url)
-
 
             if not url or not key:
                 logger.error("Supabase connection requires 'url' and 'key' parameters")
@@ -521,13 +508,13 @@ class Uploader:
                 if self.db_adapter.upload_beam_data('baselines', metric_data):
                     success_count += 1
                 else:
-                    print(f"Failed to upload baseline metric: {metric_data['metric_type']}")
+                    logger.error(f"Failed to upload baseline metric: {metric_data['metric_type']}")
             
-            print(f"Uploaded {success_count}/{len(metrics)} baseline metric records")
+            logger.error(f"Uploaded {success_count}/{len(metrics)} baseline metric records")
             return success_count == len(metrics) and len(metrics) > 0
             
         except Exception as e:
-            print(f"Error uploading baseline metrics: {e}")
+            logger.error(f"Error uploading baseline metrics: {e}")
             return False
 
     def uploadTest(self, model):
@@ -539,7 +526,13 @@ class Uploader:
             - EBeamModel
             - XBeamModel
             - Geo6xfffModel
+    
+        For Testing Print logger.info to console
         """
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         if not self.connected:
             logger.error("Not connected to database. Call connect() first.")
             return False

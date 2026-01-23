@@ -13,17 +13,17 @@ from pylinac import FieldAnalysis
 from pylinac import image as imgPylinac
 from pylinac.core.image import XIM
 import numpy as np
+import logging
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 class image_extractor:
     def process_image(self, image, is_test=False):
-        #baseline_img_png = XIM(r"data/csv_data/NDS-WKS-SN6543-2025-09-18-08-06-01-0004-BeamCheckTemplate6e/BeamProfileCheck.xim")
-        #baseline_img = XIM(image.get_path())
-        #baseline_img_png = baseline_img = XIM(image.get_path()).array.astype(np.float32)
-        #baseline_img_png = np.asarray(baseline_img)
-        #raw_img_png = XIM(image.get_path())
-        #raw_img_png = raw_img.array.astype(np.float32)
-        #raw_img_png = np.asarray(raw_img)
         
+        """
+        TODO: Extract the image from the database that is a baseline
+        """
         baseline_img = XIM(r"data/csv_data/NDS-WKS-SN6543-2025-09-18-08-06-01-0004-BeamCheckTemplate6e/BeamProfileCheck.xim")
         baseline_img_png = np.asarray(baseline_img)
         raw_img_png = image.get_image()
@@ -34,27 +34,6 @@ class image_extractor:
         # This keeps the math stable without affecting real image values.
         # -------------------------------------------------------------------------
         eps = 1e-8
-
-        # -------------------------------------------------------------------------
-        # Load the BASELINE image (reference detector response)
-        # This image represents the expected or "normal" pixel intensities.
-        # -------------------------------------------------------------------------
-        # baseline_img = image.load(
-        #     "src/image-experimentation/brae/get-damons-working/images-and-reports/10raw.png"
-        # )
-
-        # Convert the baseline image to a NumPy array for pixel-wise math
-        # baseline_array = np.asarray(baseline_img)
-
-        # -------------------------------------------------------------------------
-        # Load the RAW image (image being compared against the baseline)
-        # -------------------------------------------------------------------------
-        # raw_img = image.load(
-        #     "src/image-experimentation/brae/get-damons-working/images-and-reports/10raw_0207.png"
-        # )
-
-        # Convert the raw image to a NumPy array
-        # raw_array = np.asarray(raw_img)
 
         # -------------------------------------------------------------------------
         # Compute the mean intensity of the baseline image.
@@ -79,13 +58,12 @@ class image_extractor:
         # Geometry metadata (SID, gantry, collimator, couch) is required
         # so pylinac can properly analyze the image.
         # -------------------------------------------------------------------------
-        print("Corrected stats:")
-        print("  min:", np.min(corrected))
-        print("  max:", np.max(corrected))
-        print("  mean:", np.mean(corrected))
-        print("  NaNs:", np.isnan(corrected).any())
-        print("  Infs:", np.isinf(corrected).any())
-
+        # print("Corrected stats:")
+        # print("  min:", np.min(corrected))
+        # print("  max:", np.max(corrected))
+        # print("  mean:", np.mean(corrected))
+        # print("  NaNs:", np.isnan(corrected).any())
+        # print("  Infs:", np.isinf(corrected).any())
         corrected_dicom = imgPylinac.array_to_dicom(
             corrected,
             sid=1000,
@@ -109,7 +87,6 @@ class image_extractor:
         )
 
         # Initialize field analysis
-        # my_img = FieldAnalysis(corrected_data)
         my_img = FieldAnalysis(corrected_data)
         # Perform flatness, symmetry, and other field metrics
         my_img.analyze()
@@ -121,15 +98,11 @@ class image_extractor:
         image.set_flatness_horizontal(r.protocol_results['flatness_horizontal'])
         image.set_flatness_vertical(r.protocol_results['flatness_vertical'])
         if is_test:
-
             # Print numerical analysis results to the console
-
-            
-            print(f"Flatness (Horizontal): {image.get_flatness_horizontal()}")
-            print(f"Flatness (Vertical):   {image.get_flatness_vertical()}")
-            print(f"Symmetry (Horizontal): {image.get_symmetry_horizontal()}")
-            print(f"Symmetry (Vertical):   {image.get_symmetry_vertical()}")
-
+            logger.info(f"Flatness (Horizontal): {image.get_flatness_horizontal()}")
+            logger.info(f"Flatness (Vertical):   {image.get_flatness_vertical()}")
+            logger.info(f"Symmetry (Horizontal): {image.get_symmetry_horizontal()}")
+            logger.info(f"Symmetry (Vertical):   {image.get_symmetry_vertical()}")
             # Must Close PDF for program to complete         
             # Display the analyzed image with pylinac overlays
             my_img.plot_analyzed_image()

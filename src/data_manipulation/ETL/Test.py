@@ -12,10 +12,8 @@ Usage:
 Command:
     python -m src.data_manipulation.ETL.Test
 """ 
-from .DataProcessor import DataProcessor
+from src.data_manipulation.ETL.DataProcessor import DataProcessor
 from dotenv import load_dotenv
-#-- TEMP__
-import os
 
 def main():
     load_dotenv()
@@ -34,7 +32,7 @@ def main():
     print("-------------------------2.5x Beam Test----------------------------------")
     path = r"data\csv_data\NDS-WKS-SN6543-2015-09-18-08-06-01-0000-BeamCheckTemplate2.5x"
     dp = DataProcessor(path)
-    dp.Run()
+    dp.RunTest()
     # print("--------------------Image Processing Test----------------------------")
     # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
     # dp = DataProcessor(path)

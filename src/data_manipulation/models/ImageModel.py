@@ -1,7 +1,4 @@
-from asyncio.windows_events import NULL
 from src.data_manipulation.models.AbstractBeamModel import AbstractBeamModel
-from datetime import datetime
-import re
 import numpy as np
 
 class ImageModel(AbstractBeamModel):
