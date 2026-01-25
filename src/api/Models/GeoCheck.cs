@@ -139,4 +139,10 @@ public class GeoCheck
 
     /// <summary>Notes about the geometry check.</summary>
     public string? Note { get; set; }
+
+    /// <summary>Name of the person who accepted/signed off the geometry check.</summary>
+    public string? ApprovedBy { get; set; }
+
+    /// <summary>Date when the geometry check was accepted/signed off.</summary>
+    public DateTime? ApprovedDate { get; set; }
 }

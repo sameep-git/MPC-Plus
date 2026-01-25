@@ -142,4 +142,42 @@ public class GeoCheckController : ControllerBase
 
         return NoContent();
     }
+    [HttpPost("accept")]
+    public async Task<ActionResult> Accept([FromBody] AcceptGeoCheckRequest request, CancellationToken cancellationToken)
+    {
+        if (request.GeoCheckIds == null || !request.GeoCheckIds.Any())
+        {
+            return BadRequest("No geometry check IDs provided.");
+        }
+
+        var results = new List<GeoCheck>();
+        var errors = new List<string>();
+
+        foreach (var id in request.GeoCheckIds)
+        {
+            var geoCheck = await _repository.GetByIdAsync(id, cancellationToken);
+            if (geoCheck is null)
+            {
+                errors.Add($"Geometry check with id '{id}' was not found.");
+                continue;
+            }
+
+            geoCheck.ApprovedBy = request.ApprovedBy;
+            geoCheck.ApprovedDate = DateTime.UtcNow;
+
+            var updated = await _repository.UpdateAsync(geoCheck, cancellationToken);
+            if (!updated)
+            {
+                errors.Add($"Failed to update geometry check '{id}'.");
+            }
+            else
+            {
+                results.Add(geoCheck);
+            }
+        }
+
+        return Ok(results);
+    }
 }
+
+public record AcceptGeoCheckRequest(IEnumerable<string> GeoCheckIds, string ApprovedBy);

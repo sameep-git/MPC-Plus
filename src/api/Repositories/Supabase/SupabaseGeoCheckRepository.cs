@@ -58,7 +58,7 @@ public class SupabaseGeoCheckRepository : IGeoCheckRepository
         try
         {
             var response = await _client.From<GeoCheckFullEntity>()
-                .Filter(nameof(GeoCheckFullEntity.Id), Supabase.Postgrest.Constants.Operator.Equals, id)
+                .Filter("id", Supabase.Postgrest.Constants.Operator.Equals, id)
                 .Get();
             return response.Models.FirstOrDefault()?.ToModel();
         }
@@ -111,7 +111,7 @@ public class SupabaseGeoCheckRepository : IGeoCheckRepository
         try
         {
             await _client.From<GeoCheckEntity>()
-                .Filter(nameof(GeoCheckEntity.Id), Supabase.Postgrest.Constants.Operator.Equals, id)
+                .Filter("id", Supabase.Postgrest.Constants.Operator.Equals, id)
                 .Delete();
             return true;
         }
