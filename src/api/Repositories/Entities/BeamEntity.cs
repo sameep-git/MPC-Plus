@@ -38,10 +38,10 @@ public class BeamEntity : BaseModel
     public string? Note { get; set; }
 
     [Column("approved_by")]
-    public string? AcceptedBy { get; set; }
+    public string? ApprovedBy { get; set; }
 
     [Column("approved_date")]
-    public DateTime? AcceptedDate { get; set; }
+    public DateTime? ApprovedDate { get; set; }
 
     [Column("timestamp")]
     public DateTime? Timestamp { get; set; }
@@ -62,8 +62,8 @@ public class BeamEntity : BaseModel
             CenterShift = CenterShift,
             MachineId = MachineId,
             Note = Note,
-            AcceptedBy = AcceptedBy,
-            AcceptedDate = AcceptedDate
+            ApprovedBy = ApprovedBy,
+            ApprovedDate = ApprovedDate
         };
 
     /// <summary>
@@ -82,7 +82,7 @@ public class BeamEntity : BaseModel
             CenterShift = beam.CenterShift,
             MachineId = beam.MachineId,
             Note = beam.Note,
-            AcceptedBy = beam.AcceptedBy,
-            AcceptedDate = beam.AcceptedDate
+            ApprovedBy = beam.ApprovedBy,
+            ApprovedDate = beam.ApprovedDate
         };
 }

@@ -36,10 +36,10 @@ public class Beam
     public string? Note { get; set; }
 
     /// <summary>Name of the person who accepted/signed off the beam check.</summary>
-    public string? AcceptedBy { get; set; }
+    public string? ApprovedBy { get; set; }
 
     /// <summary>Date when the beam check was accepted/signed off.</summary>
-    public DateTime? AcceptedDate { get; set; }
+    public DateTime? ApprovedDate { get; set; }
 
     /// <summary>
     /// Convenience property representing a single numeric value to display in UIs.

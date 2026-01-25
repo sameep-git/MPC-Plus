@@ -173,8 +173,8 @@ public class BeamsController : ControllerBase
                 continue;
             }
 
-            beam.AcceptedBy = request.AcceptedBy;
-            beam.AcceptedDate = DateTime.UtcNow;
+            beam.ApprovedBy = request.ApprovedBy;
+            beam.ApprovedDate = DateTime.UtcNow;
 
             var updated = await _repository.UpdateAsync(beam, cancellationToken);
             if (!updated)
@@ -257,4 +257,4 @@ public class BeamsController : ControllerBase
     }
 }
 
-public record AcceptBeamRequest(IEnumerable<string> BeamIds, string AcceptedBy);
+public record AcceptBeamRequest(IEnumerable<string> BeamIds, string ApprovedBy);
