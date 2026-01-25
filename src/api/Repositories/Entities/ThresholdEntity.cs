@@ -32,7 +32,7 @@ public class ThresholdEntity : BaseModel
             CheckType = threshold.CheckType,
             BeamVariant = threshold.BeamVariant,
             MetricType = threshold.MetricType,
-            LastUpdated = threshold.LastUpdated,
+            LastUpdated = threshold.LastUpdated ?? DateTime.UtcNow,
             Value = threshold.Value
         };
 

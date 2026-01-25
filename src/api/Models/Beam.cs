@@ -47,5 +47,25 @@ public class Beam
     /// This is not persisted to the database; it's computed by repositories.
     /// </summary>
     public double? Value { get; set; }
+
+    /// <summary>
+    /// Overall status of the beam check (e.g., PASS, FAIL). Computed dynamically.
+    /// </summary>
+    public string? Status { get; set; }
+
+    /// <summary>
+    /// Status of the relative output check. Computed dynamically.
+    /// </summary>
+    public string? RelOutputStatus { get; set; }
+
+    /// <summary>
+    /// Status of the relative uniformity check. Computed dynamically.
+    /// </summary>
+    public string? RelUniformityStatus { get; set; }
+
+    /// <summary>
+    /// Status of the center shift check. Computed dynamically.
+    /// </summary>
+    public string? CenterShiftStatus { get; set; }
 }
 

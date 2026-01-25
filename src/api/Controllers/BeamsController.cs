@@ -1,4 +1,5 @@
 using Api.Models;
+using Api.Repositories;
 using Api.Repositories.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,10 +10,12 @@ namespace Api.Controllers;
 public class BeamsController : ControllerBase
 {
     private readonly IBeamRepository _repository;
+    private readonly IThresholdRepository _thresholdRepository;
 
-    public BeamsController(IBeamRepository repository)
+    public BeamsController(IBeamRepository repository, IThresholdRepository thresholdRepository)
     {
         _repository = repository;
+        _thresholdRepository = thresholdRepository;
     }
 
     [HttpGet]
@@ -43,6 +46,13 @@ public class BeamsController : ControllerBase
             startDate: startDateDt,
             endDate: endDateDt,
             cancellationToken: cancellationToken);
+
+        // Calculate dynamic status
+        var thresholds = await _thresholdRepository.GetAllAsync(cancellationToken);
+        foreach (var beam in beams)
+        {
+            CalculateStatus(beam, thresholds);
+        }
 
         // Group beams by time proximity (e.g. 2 minutes)
         var groups = new List<CheckGroup>();
@@ -80,6 +90,10 @@ public class BeamsController : ControllerBase
         {
             return NotFound($"Beam with id '{id}' was not found.");
         }
+        
+        // Calculate status
+        var thresholds = await _thresholdRepository.GetAllAsync(cancellationToken);
+        CalculateStatus(beam, thresholds);
 
         return Ok(beam);
     }
@@ -90,6 +104,11 @@ public class BeamsController : ControllerBase
         try
         {
             var created = await _repository.CreateAsync(beam, cancellationToken);
+            
+            // Calculate status for response
+            var thresholds = await _thresholdRepository.GetAllAsync(cancellationToken);
+            CalculateStatus(created, thresholds);
+
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (InvalidOperationException exception)
@@ -177,6 +196,64 @@ public class BeamsController : ControllerBase
         }
 
         return Ok(results);
+    }
+
+    private void CalculateStatus(Beam beam, IReadOnlyList<Threshold> thresholds)
+    {
+        // Default to PASS
+        beam.Status = "PASS";
+        beam.RelOutputStatus = "PASS";
+        beam.RelUniformityStatus = "PASS";
+        beam.CenterShiftStatus = "PASS";
+
+        // Find relevant thresholds
+        var outputThreshold = thresholds.FirstOrDefault(
+            t => t.MachineId == beam.MachineId && 
+                 t.CheckType == "beam" && 
+                 t.BeamVariant == beam.Type && 
+                 t.MetricType == "Relative Output");
+
+        var uniformityThreshold = thresholds.FirstOrDefault(
+            t => t.MachineId == beam.MachineId && 
+                 t.CheckType == "beam" && 
+                 t.BeamVariant == beam.Type && 
+                 t.MetricType == "Relative Uniformity");
+                 
+        var centerShiftThreshold = thresholds.FirstOrDefault(
+            t => t.MachineId == beam.MachineId && 
+                 t.CheckType == "beam" && 
+                 t.BeamVariant == beam.Type && 
+                 t.MetricType == "Center Shift");
+
+        // Check Relative Output
+        if (outputThreshold != null && beam.RelOutput.HasValue)
+        {
+            if (Math.Abs(beam.RelOutput.Value) > outputThreshold.Value)
+            {
+                beam.RelOutputStatus = "FAIL";
+                beam.Status = "FAIL";
+            }
+        }
+
+        // Check Relative Uniformity
+        if (uniformityThreshold != null && beam.RelUniformity.HasValue)
+        {
+            if (Math.Abs(beam.RelUniformity.Value) > uniformityThreshold.Value)
+            {
+                beam.RelUniformityStatus = "FAIL";
+                beam.Status = "FAIL";
+            }
+        }
+
+        // Check Center Shift
+        if (centerShiftThreshold != null && beam.CenterShift.HasValue)
+        {
+            if (Math.Abs(beam.CenterShift.Value) > centerShiftThreshold.Value)
+            {
+                beam.CenterShiftStatus = "FAIL";
+                beam.Status = "FAIL";
+            }
+        }
     }
 }
 

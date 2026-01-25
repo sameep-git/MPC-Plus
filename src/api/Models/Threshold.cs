@@ -18,7 +18,7 @@ public class Threshold
     public required string MetricType { get; set; }
 
     /// <summary>Last update timestamp.</summary>
-    public required DateTime LastUpdated { get; set; }
+    public DateTime? LastUpdated { get; set; }
 
     /// <summary>Threshold value.</summary>
     public double? Value { get; set; }

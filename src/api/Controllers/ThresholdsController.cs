@@ -23,4 +23,19 @@ public class ThresholdsController : ControllerBase
         var thresholds = await _repository.GetAllAsync(cancellationToken);
         return Ok(thresholds);
     }
+
+    [HttpPost]
+    public async Task<ActionResult<Threshold>> Save([FromBody] Threshold threshold, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var saved = await _repository.SaveAsync(threshold, cancellationToken);
+            return Ok(saved);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving threshold");
+            return StatusCode(500, "An error occurred while saving the threshold.");
+        }
+    }
 }
