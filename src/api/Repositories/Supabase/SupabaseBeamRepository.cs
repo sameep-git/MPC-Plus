@@ -134,7 +134,7 @@ public class SupabaseBeamRepository : IBeamRepository
     public async Task<IReadOnlyList<string>> GetBeamTypesAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var types = new[] { "6e", "9e", "12e", "16e", "10x", "15x", "6xff" };
+        var types = new[] { "2.5x", "6x", "6xFFF", "10x", "10xFFF", "15x", "6e", "9e", "12e", "16e" };
         return await Task.FromResult(types.ToList().AsReadOnly());
     }
 
@@ -151,7 +151,7 @@ public class SupabaseBeamRepository : IBeamRepository
                 t.MachineId == beam.MachineId && 
                 t.CheckType == "beam" && 
                 t.MetricType == metricType && 
-                t.BeamVariant == beam.Type) 
+                string.Equals(t.BeamVariant, beam.Type, StringComparison.OrdinalIgnoreCase)) 
             ?? thresholds.FirstOrDefault(t => 
                 t.MachineId == beam.MachineId && 
                 t.CheckType == "beam" && 

@@ -39,7 +39,7 @@ paths:
           required: false
           schema:
             type: string
-          description: Beam variant (e.g., 6x, 6e)
+          description: Beam variant (e.g., 6x, 6xFFF)
         - name: metricType
           in: query
           required: true
@@ -323,7 +323,7 @@ paths:
           required: false
           schema:
             type: string
-          description: Type of beam (e.g., 6e, 9e, 12e, 16e, 10x, 15x, 6xff)
+          description: Type of beam (e.g., 2.5x, 6x, 6xFFF, 10x, 10xFFF, 15x, 6e, 9e, 12e, 16e)
         - name: machineId
           in: query
           required: false
@@ -685,7 +685,7 @@ paths:
           required: false
           schema:
             type: string
-          description: Type of beam (e.g., 6xff)
+          description: Type of beam (e.g., 6xFFF)
         - name: date
           in: query
           required: false
@@ -819,7 +819,7 @@ components:
           description: Unique identifier for the beam
         Type:
           type: string
-          description: Type of beam (e.g., 6e, 9e, 12e, 16e, 10x, 15x, 6xff)
+          description: Type of beam (e.g., 2.5x, 6x, 6xFFF, 10x, 10xFFF, 15x, 6e, 9e, 12e, 16e)
         Date:
           type: string
           format: date
@@ -958,7 +958,7 @@ components:
           description: Unique identifier for the geometry check
         Type:
           type: string
-          description: Type of beam (e.g., 6xff)
+          description: Type of beam (e.g., 6xFFF)
         Date:
           type: string
           format: date
