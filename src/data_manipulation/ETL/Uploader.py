@@ -501,6 +501,57 @@ class Uploader:
                         'date': date,
                         'value': center_shift
                     })
+
+            # Add flatness and symmetry metrics if available
+            # Note: getters are in AbstractBeamModel, so available for all beam types
+            
+            # vert_flatness
+            flat_vert = model.get_flatness_vertical()
+            if flat_vert is not None:
+                metrics.append({
+                    'machine_id': machine_id,
+                    'check_type': check_type,
+                    'beam_variant': beam_variant,
+                    'metric_type': 'vert_flatness',
+                    'date': date,
+                    'value': flat_vert
+                })
+
+            # hori_flatness
+            flat_hori = model.get_flatness_horizontal()
+            if flat_hori is not None:
+                metrics.append({
+                    'machine_id': machine_id,
+                    'check_type': check_type,
+                    'beam_variant': beam_variant,
+                    'metric_type': 'hori_flatness',
+                    'date': date,
+                    'value': flat_hori
+                })
+
+            # vert_symmetry
+            sym_vert = model.get_symmetry_vertical()
+            if sym_vert is not None:
+                metrics.append({
+                    'machine_id': machine_id,
+                    'check_type': check_type,
+                    'beam_variant': beam_variant,
+                    'metric_type': 'vert_symmetry',
+                    'date': date,
+                    'value': sym_vert
+                })
+
+            # hori_symmetry
+            sym_hori = model.get_symmetry_horizontal()
+            if sym_hori is not None:
+                metrics.append({
+                    'machine_id': machine_id,
+                    'check_type': check_type,
+                    'beam_variant': beam_variant,
+                    'metric_type': 'hori_symmetry',
+                    'date': date,
+                    'value': sym_hori
+                })
             
             # Upload each metric record
             success_count = 0
@@ -571,6 +622,10 @@ class Uploader:
                     'rel_uniformity': eBeam.get_relative_uniformity(),
                     'rel_output': eBeam.get_relative_output(),
                     'center_shift': None,  # E-beams don't have center_shift
+                    'vert_flatness': eBeam.get_flatness_vertical(),
+                    'hori_flatness': eBeam.get_flatness_horizontal(),
+                    'vert_symmetry': eBeam.get_symmetry_vertical(),
+                    'hori_symmetry': eBeam.get_symmetry_horizontal(),
                     'machine_id': eBeam.get_machine_SN(),
                     'note': None  # Add note if available in the model
                 }
@@ -604,6 +659,10 @@ class Uploader:
                     'rel_uniformity': xBeam.get_relative_uniformity(),
                     'rel_output': xBeam.get_relative_output(),
                     'center_shift': xBeam.get_center_shift(),
+                    'vert_flatness': xBeam.get_flatness_vertical(),
+                    'hori_flatness': xBeam.get_flatness_horizontal(),
+                    'vert_symmetry': xBeam.get_symmetry_vertical(),
+                    'hori_symmetry': xBeam.get_symmetry_horizontal(),
                     'machine_id': xBeam.get_machine_SN(),
                     'note': None  # Add note if available in the model
                 }
@@ -641,6 +700,10 @@ class Uploader:
                     'rel_uniformity': geoModel.get_relative_uniformity(),
                     'rel_output': geoModel.get_relative_output(),
                     'center_shift': geoModel.get_center_shift(),
+                    'vert_flatness': geoModel.get_flatness_vertical(),
+                    'hori_flatness': geoModel.get_flatness_horizontal(),
+                    'vert_symmetry': geoModel.get_symmetry_vertical(),
+                    'hori_symmetry': geoModel.get_symmetry_horizontal(),
                     'machine_id': geoModel.get_machine_SN(),
                     'note': None  # Add note if available in the model
                 }
