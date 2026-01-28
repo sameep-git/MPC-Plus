@@ -72,16 +72,21 @@ class DataProcessor:
             beam_type (str): The type of the beam (e.g., "6e", "10x", "6x").
         """
         image = ImageModel()
-        image.set_path(self.image_path)
+        image.set_path(self.image_path) #Path to the BeamProfileCheck.xim file
         image.set_type(beam_type)
         image.set_date(image._getDateFromPathName(self.image_path))
         image.set_machine_SN(image._getSNFromPathName(self.image_path))
         image.set_image_name(image.generate_image_name())
         image.set_image(XIM(image.get_path()))
-        image.convert_XIM_to_PNG()
+        {
+            #Image path has suffix "BeamProfileCheck.xim", remove and add "Flood" and "Dark" to get flood and dark image paths
+            image.set_flood_image_path(image.get_path().replace("BeamProfileCheck.xim", "Floodfield-Raw.xim"))
+            image.set_dark_image_path(image.get_path().replace("BeamProfileCheck.xim", "Offset.dat"))
+        }
         #Process the image (Get flatness and symmetry from Pilinac FieldAnalysis)
         if is_test: logger.info("Processing test image in image_extractor.py")
         self.image_ex.process_image(image, is_test)
+        image.convert_XIM_to_PNG()
         if is_test: 
             logger.info("Test image processed & returned from image_extractor.py")
             logger.info("Image Name: %s", image.get_image_name())
