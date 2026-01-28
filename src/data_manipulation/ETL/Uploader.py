@@ -91,10 +91,9 @@ class SupabaseAdapter(DatabaseAdapter):
         """
         try:
             from supabase import create_client, Client
-            
             url = connection_params.get('url')
             key = connection_params.get('key')
-            
+
             if not url or not key:
                 logger.error("Supabase connection requires 'url' and 'key' parameters")
                 return False
@@ -188,7 +187,7 @@ class SupabaseAdapter(DatabaseAdapter):
         
         try:
             # Ensure machine exists before uploading beam
-            machine_id = data.get('machineId')
+            machine_id = data.get('machine_id')
             if machine_id:
                 if not self.ensure_machine_exists(machine_id, path):
                     logger.warning(f"Could not ensure machine {machine_id} exists, but continuing with upload attempt")
@@ -435,6 +434,7 @@ class Uploader:
             return False
 
         model_type = type(model).__name__.lower()
+        
 
         if "ebeam" in model_type:
             return self.eModelUpload(model)
@@ -445,6 +445,78 @@ class Uploader:
         else:
             raise TypeError(f"Unsupported model type: {type(model).__name__}")
 
+    def _upload_baseline_metrics(self, model, check_type: str):
+        """
+        Upload baseline data as individual metric records to the baseline table.
+        Creates one record per metric (rel_uniformity, rel_output, center_shift if applicable).
+        
+        Args:
+            model: The beam model (EBeam, XBeam, or GeoModel)
+            check_type: "beam" for EBeam/XBeam, "geometry" for GeoModel
+        
+        Returns:
+            bool: True if all metrics uploaded successfully, False otherwise
+        """
+        try:
+            machine_id = model.get_machine_SN()
+            beam_variant = model.get_type()  # e.g., "6e", "15x", "6x"
+            date = model.get_date()
+            
+            # List of metrics to upload
+            metrics = []
+            
+            # Add rel_uniformity
+            rel_uniformity = model.get_relative_uniformity()
+            if rel_uniformity is not None:
+                metrics.append({
+                    'machine_id': machine_id,
+                    'check_type': check_type,
+                    'beam_variant': beam_variant,
+                    'metric_type': 'rel_uniformity',
+                    'date': date,
+                    'value': rel_uniformity
+                })
+            
+            # Add rel_output
+            rel_output = model.get_relative_output()
+            if rel_output is not None:
+                metrics.append({
+                    'machine_id': machine_id,
+                    'check_type': check_type,
+                    'beam_variant': beam_variant,
+                    'metric_type': 'rel_output',
+                    'date': date,
+                    'value': rel_output
+                })
+            
+            # Add center_shift (only for XBeam and GeoModel, not EBeam)
+            if hasattr(model, 'get_center_shift'):
+                center_shift = model.get_center_shift()
+                if center_shift is not None:
+                    metrics.append({
+                        'machine_id': machine_id,
+                        'check_type': check_type,
+                        'beam_variant': beam_variant,
+                        'metric_type': 'center_shift',
+                        'date': date,
+                        'value': center_shift
+                    })
+            
+            # Upload each metric record
+            success_count = 0
+            for metric_data in metrics:
+                if self.db_adapter.upload_beam_data('baselines', metric_data):
+                    success_count += 1
+                else:
+                    logger.error(f"Failed to upload baseline metric: {metric_data['metric_type']}")
+            
+            logger.error(f"Uploaded {success_count}/{len(metrics)} baseline metric records")
+            return success_count == len(metrics) and len(metrics) > 0
+            
+        except Exception as e:
+            logger.error(f"Error uploading baseline metrics: {e}")
+            return False
+
     def uploadTest(self, model):
         """
         Automatically calls the correct upload method
@@ -454,7 +526,13 @@ class Uploader:
             - EBeamModel
             - XBeamModel
             - Geo6xfffModel
+    
+        For Testing Print logger.info to console
         """
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         if not self.connected:
             logger.error("Not connected to database. Call connect() first.")
             return False
@@ -473,25 +551,30 @@ class Uploader:
     # --- E-BEAM ---
     def eModelUpload(self, eBeam):
         """
-        Upload data for E-beam model to the single beam table.
-        Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
+        Upload data for E-beam model to the single beam table or baseline table.
+        Maps to schema: type, date, path, rel_uniformity, rel_output, center_shift, machine_id, note
+        
+        For baselines: Uploads individual metric records to baseline table.
+        For regular beams: Uploads single record to beam table.
         """
         try:
-            # Prepare data dictionary mapped to 'beams' table schema
-            data = {
-                'type': eBeam.get_type(),
-                'date': eBeam.get_date(),
-                'path': eBeam.get_path(),
-                'relOutput': float(eBeam.get_relative_output()) if eBeam.get_relative_output() else None,
-                'relUniformity': float(eBeam.get_relative_uniformity()) if eBeam.get_relative_uniformity() else None,
-                'centerShift': None,  # E-beams don't have center shift
-                'machineId': eBeam.get_machine_SN(),
-                'note': f"Baseline: {eBeam.get_baseline()}" if eBeam.get_baseline() else None,
-            }
-
-            # Upload to database, passing path for machine creation
-            table_name = 'beams'
-            return self.db_adapter.upload_beam_data(table_name, data, path=eBeam.get_path())
+            # Check if this is a baseline
+            if eBeam.get_baseline():
+                # Upload to baseline table as individual metric records
+                return self._upload_baseline_metrics(eBeam, check_type='beam')
+            else:
+                # Prepare data dictionary using model getters, matching the beam table schema
+                data = {
+                    'type': eBeam.get_type(),
+                    'date': eBeam.get_date(),
+                    'path': eBeam.get_path(),
+                    'rel_uniformity': eBeam.get_relative_uniformity(),
+                    'rel_output': eBeam.get_relative_output(),
+                    'center_shift': None,  # E-beams don't have center_shift
+                    'machine_id': eBeam.get_machine_SN(),
+                    'note': None  # Add note if available in the model
+                }
+                return self.db_adapter.upload_beam_data('beams', data)
 
         except Exception as e:
             logger.error(f"Error during E-beam upload: {e}", exc_info=True)
@@ -501,30 +584,30 @@ class Uploader:
     # --- X-BEAM ---
     def xModelUpload(self, xBeam):
         """
-        Upload data for X-beam model to the single beam table.
-        Maps to schema: type, date, path, relUniformity, relOutput, centerShift, machineId, note
+        Upload data for X-beam model to the single beam table or baseline table.
+        Maps to schema: type, date, path, rel_uniformity, rel_output, center_shift, machine_id, note
+        
+        For baselines: Uploads individual metric records to baseline table.
+        For regular beams: Uploads single record to beam table.
         """
         try:
-            # Prepare data dictionary mapped to 'beams' table schema
-            # Get values, handling Decimal('0.0') which is falsy but valid
-            rel_output = xBeam.get_relative_output()
-            rel_uniformity = xBeam.get_relative_uniformity()
-            center_shift = xBeam.get_center_shift()
-            
-            data = {
-                'type': xBeam.get_type(),
-                'date': xBeam.get_date(),
-                'path': xBeam.get_path(),
-                'relOutput': float(rel_output) if rel_output is not None else None,
-                'relUniformity': float(rel_uniformity) if rel_uniformity is not None else None,
-                'centerShift': float(center_shift) if center_shift is not None else None,
-                'machineId': xBeam.get_machine_SN(),
-                'note': f"Baseline: {xBeam.get_baseline()}" if xBeam.get_baseline() else None,
-            }
-
-            # Upload to database, passing path for machine creation
-            table_name = 'beams'
-            return self.db_adapter.upload_beam_data(table_name, data, path=xBeam.get_path())
+            # Check if this is a baseline
+            if xBeam.get_baseline():
+                # Upload to baseline table as individual metric records
+                return self._upload_baseline_metrics(xBeam, check_type='beam')
+            else:
+                # Prepare data dictionary using model getters, matching the beam table schema
+                data = {
+                    'type': xBeam.get_type(),
+                    'date': xBeam.get_date(),
+                    'path': xBeam.get_path(),
+                    'rel_uniformity': xBeam.get_relative_uniformity(),
+                    'rel_output': xBeam.get_relative_output(),
+                    'center_shift': xBeam.get_center_shift(),
+                    'machine_id': xBeam.get_machine_SN(),
+                    'note': None  # Add note if available in the model
+                }
+                return self.db_adapter.upload_beam_data('beams', data)
 
         except Exception as e:
             logger.error(f"Error during X-beam upload: {e}", exc_info=True)
@@ -534,156 +617,142 @@ class Uploader:
     # --- GEO MODEL ---
     def geoModelUpload(self, geoModel):
         """
-        Upload data for Geo6xfffModel to database.
-        The 6x beam data (relative_output, relative_uniformity, center_shift) goes to 'beams' table as an X-beam.
-        Geometry-specific data (jaws, couch, gantry, etc.) goes to 'geochecks' table.
-        MLC leaves and backlash go to separate tables: geocheck_mlc_leaves_a/b and geocheck_mlc_backlash_a/b.
+        Upload data for Geo6xfffModel to the single beam table or baseline table.
+        Maps to schema: type, date, path, rel_uniformity, rel_output, center_shift, machine_id, note
+        
+        For baselines: Uploads individual metric records to baseline table.
+        For regular beams: Uploads single record to beam table.
+        
+        Note: Geometry models have additional data (isocenter, gantry, couch, MLC, jaws) 
+        that is not stored in the basic beam table. The full extraction code is 
+        commented out below for easy re-enabling when geometry tables are created.
         """
         try:
-            # Step 1: Extract and upload 6x beam data to 'beams' table (as an X-beam)
-            rel_output = geoModel.get_relative_output()
-            rel_uniformity = geoModel.get_relative_uniformity()
-            center_shift = geoModel.get_center_shift()
+            # Check if this is a baseline
+            if geoModel.get_baseline():
+                # Upload to baseline table as individual metric records
+                return self._upload_baseline_metrics(geoModel, check_type='geometry')
+            else:
+                # Prepare basic beam data matching the beam table schema
+                data = {
+                    'type': geoModel.get_type(),
+                    'date': geoModel.get_date(),
+                    'path': geoModel.get_path(),
+                    'rel_uniformity': geoModel.get_relative_uniformity(),
+                    'rel_output': geoModel.get_relative_output(),
+                    'center_shift': geoModel.get_center_shift(),
+                    'machine_id': geoModel.get_machine_SN(),
+                    'note': None  # Add note if available in the model
+                }
+                result = self.db_adapter.upload_beam_data('beams', data)
             
-            beam_data = {
-                'type': geoModel.get_type(),  # "6x" - treated as an X-beam
-                'date': geoModel.get_date(),
-                'path': geoModel.get_path(),
-                'relOutput': float(rel_output) if rel_output is not None else None,
-                'relUniformity': float(rel_uniformity) if rel_uniformity is not None else None,
-                'centerShift': float(center_shift) if center_shift is not None else None,
-                'machineId': geoModel.get_machine_SN(),
-                'note': f"Baseline: {geoModel.get_baseline()}, Geometry check data available" if geoModel.get_baseline() else "Geometry check data available",
-            }
-
-            # Upload 6x beam to beams table
-            beam_result = self.db_adapter.upload_beam_data('beams', beam_data, path=geoModel.get_path())
-            if not beam_result:
-                logger.warning("Failed to upload 6x beam data, but continuing with geometry data upload")
+            # ========================================================================
+            # COMMENTED OUT: Full geometry data extraction
+            # Uncomment when geometry_data table is created
+            # ========================================================================
             
-            # Check if this is BeamCheckTemplate6xFFF - these should NOT go to geochecks
-            path = geoModel.get_path()
-            is_beamcheck_6xfff = "BeamCheckTemplate6xFFF" in path
-            
-            if is_beamcheck_6xfff:
-                # BeamCheckTemplate6xFFF only goes to beams table, not geochecks
-                logger.info("BeamCheckTemplate6xFFF detected - skipping geochecks upload (beam data only)")
-                return beam_result
-            
-            # Step 2: Upload geometry data to 'geochecks' table (without MLC leaves/backlash)
-            # ID will be auto-generated by upload_geocheck_data if not provided
-            # Note: 'type' column doesn't exist in geochecks table - beam type is stored in beams table
-            geocheck_data = {
-                'path': geoModel.get_path(),
-                'machine_id': geoModel.get_machine_SN(),
-                'date': geoModel.get_date(),
-                # IsoCenterGroup
-                'iso_center_size': float(geoModel.get_IsoCenterSize()) if geoModel.get_IsoCenterSize() is not None else None,
-                'iso_center_mv_offset': float(geoModel.get_IsoCenterMVOffset()) if geoModel.get_IsoCenterMVOffset() is not None else None,
-                'iso_center_kv_offset': float(geoModel.get_IsoCenterKVOffset()) if geoModel.get_IsoCenterKVOffset() is not None else None,
-                # BeamGroup (already in beams table, but also in geochecks for reference)
-                'relative_output': float(rel_output) if rel_output is not None else None,
-                'relative_uniformity': float(rel_uniformity) if rel_uniformity is not None else None,
-                'center_shift': float(center_shift) if center_shift is not None else None,
-                # CollimationGroup
-                'collimation_rotation_offset': float(geoModel.get_CollimationRotationOffset()) if geoModel.get_CollimationRotationOffset() is not None else None,
-                # GantryGroup
-                'gantry_absolute': float(geoModel.get_GantryAbsolute()) if geoModel.get_GantryAbsolute() is not None else None,
-                'gantry_relative': float(geoModel.get_GantryRelative()) if geoModel.get_GantryRelative() is not None else None,
-                # EnhancedCouchGroup
-                'couch_max_position_error': float(geoModel.get_CouchMaxPositionError()) if geoModel.get_CouchMaxPositionError() is not None else None,
-                'couch_lat': float(geoModel.get_CouchLat()) if geoModel.get_CouchLat() is not None else None,
-                'couch_lng': float(geoModel.get_CouchLng()) if geoModel.get_CouchLng() is not None else None,
-                'couch_vrt': float(geoModel.get_CouchVrt()) if geoModel.get_CouchVrt() is not None else None,
-                'couch_rtn_fine': float(geoModel.get_CouchRtnFine()) if geoModel.get_CouchRtnFine() is not None else None,
-                'couch_rtn_large': float(geoModel.get_CouchRtnLarge()) if geoModel.get_CouchRtnLarge() is not None else None,
-                'rotation_induced_couch_shift_full_range': float(geoModel.get_RotationInducedCouchShiftFullRange()) if geoModel.get_RotationInducedCouchShiftFullRange() is not None else None,
-                # MLCGroup - Offsets (summary stats only, not individual leaves)
-                'max_offset_a': float(geoModel.get_MaxOffsetA()) if geoModel.get_MaxOffsetA() is not None else None,
-                'max_offset_b': float(geoModel.get_MaxOffsetB()) if geoModel.get_MaxOffsetB() is not None else None,
-                'mean_offset_a': float(geoModel.get_MeanOffsetA()) if geoModel.get_MeanOffsetA() is not None else None,
-                'mean_offset_b': float(geoModel.get_MeanOffsetB()) if geoModel.get_MeanOffsetB() is not None else None,
-                # MLCBacklashGroup - Summary stats only (not individual leaves)
-                'mlc_backlash_max_a': float(geoModel.get_MLCBacklashMaxA()) if geoModel.get_MLCBacklashMaxA() is not None else None,
-                'mlc_backlash_max_b': float(geoModel.get_MLCBacklashMaxB()) if geoModel.get_MLCBacklashMaxB() is not None else None,
-                'mlc_backlash_mean_a': float(geoModel.get_MLCBacklashMeanA()) if geoModel.get_MLCBacklashMeanA() is not None else None,
-                'mlc_backlash_mean_b': float(geoModel.get_MLCBacklashMeanB()) if geoModel.get_MLCBacklashMeanB() is not None else None,
-                # JawsGroup
-                'jaw_x1': float(geoModel.get_JawX1()) if geoModel.get_JawX1() is not None else None,
-                'jaw_x2': float(geoModel.get_JawX2()) if geoModel.get_JawX2() is not None else None,
-                'jaw_y1': float(geoModel.get_JawY1()) if geoModel.get_JawY1() is not None else None,
-                'jaw_y2': float(geoModel.get_JawY2()) if geoModel.get_JawY2() is not None else None,
-                # JawsParallelismGroup
-                'jaw_parallelism_x1': float(geoModel.get_JawParallelismX1()) if geoModel.get_JawParallelismX1() is not None else None,
-                'jaw_parallelism_x2': float(geoModel.get_JawParallelismX2()) if geoModel.get_JawParallelismX2() is not None else None,
-                'jaw_parallelism_y1': float(geoModel.get_JawParallelismY1()) if geoModel.get_JawParallelismY1() is not None else None,
-                'jaw_parallelism_y2': float(geoModel.get_JawParallelismY2()) if geoModel.get_JawParallelismY2() is not None else None,
+            # ---- Extract IsoCenterGroup data ----
+            isocenter_data = {
+                'beam_id': result_id,  # Foreign key to beam table
+                'isoCenterSize': geoModel.get_IsoCenterSize(),
+                'isoCenterMVOffset': geoModel.get_IsoCenterMVOffset(),
+                'isoCenterKVOffset': geoModel.get_IsoCenterKVOffset(),
             }
             
-            geocheck_id_result = self.db_adapter.upload_geocheck_data(geocheck_data, path=geoModel.get_path())
-            if not geocheck_id_result:
-                logger.error("Failed to upload geocheck data, cannot proceed with MLC data")
-                return False
+            # ---- Extract CollimationGroup data ----
+            collimation_data = {
+                'beam_id': result_id,
+                'collimationRotationOffset': geoModel.get_CollimationRotationOffset(),
+            }
             
-            # Step 3: Upload MLC leaves data to separate tables
-            # Determine leaf range based on template type
-            # GeometryCheckTemplate6xMVkVEnhancedCouch only has leaves 11-50
-            if "GeometryCheckTemplate6xMVkVEnhancedCouch" in path:
-                leaf_range = range(11, 51)  # Only leaves 11-50 for this template
-            else:
-                leaf_range = range(1, 61)  # Leaves 1-60 for other templates (e.g., BeamCheckTemplate6xFFF)
+            # ---- Extract GantryGroup data ----
+            gantry_data = {
+                'beam_id': result_id,
+                'gantryAbsolute': geoModel.get_GantryAbsolute(),
+                'gantryRelative': geoModel.get_GantryRelative(),
+            }
             
-            leaves_a_data = []
-            leaves_b_data = []
-            for i in leaf_range:
-                leaf_a_val = geoModel.get_MLCLeafA(i)
-                leaf_b_val = geoModel.get_MLCLeafB(i)
-                
-                leaves_a_data.append({
-                    'leaf_number': i,
-                    'leaf_value': float(leaf_a_val) if leaf_a_val is not None else None
-                })
-                leaves_b_data.append({
-                    'leaf_number': i,
-                    'leaf_value': float(leaf_b_val) if leaf_b_val is not None else None
-                })
+            # ---- Extract EnhancedCouchGroup data ----
+            couch_data = {
+                'beam_id': result_id,
+                'couchMaxPositionError': geoModel.get_CouchMaxPositionError(),
+                'couchLat': geoModel.get_CouchLat(),
+                'couchLng': geoModel.get_CouchLng(),
+                'couchVrt': geoModel.get_CouchVrt(),
+                'couchRtnFine': geoModel.get_CouchRtnFine(),
+                'couchRtnLarge': geoModel.get_CouchRtnLarge(),
+                'rotationInducedCouchShiftFullRange': geoModel.get_RotationInducedCouchShiftFullRange(),
+            }
             
-            leaves_a_result = self.db_adapter.upload_mlc_leaves(geocheck_id_result, leaves_a_data, 'a')
-            leaves_b_result = self.db_adapter.upload_mlc_leaves(geocheck_id_result, leaves_b_data, 'b')
+            # ---- Extract MLC Leaves data (A and B banks, leaves 11-50) ----
+            mlc_leaves_a = {}
+            mlc_leaves_b = {}
+            for i in range(11, 51):
+                mlc_leaves_a[f"leaf_{i}"] = geoModel.get_MLCLeafA(i)
+                mlc_leaves_b[f"leaf_{i}"] = geoModel.get_MLCLeafB(i)
             
-            # Step 4: Upload MLC backlash data to separate tables
-            # Use same leaf range as determined above
-            backlash_a_data = []
-            backlash_b_data = []
-            for i in leaf_range:
-                backlash_a_val = geoModel.get_MLCBacklashA(i)
-                backlash_b_val = geoModel.get_MLCBacklashB(i)
-                
-                backlash_a_data.append({
-                    'leaf_number': i,
-                    'backlash_value': float(backlash_a_val) if backlash_a_val is not None else None
-                })
-                backlash_b_data.append({
-                    'leaf_number': i,
-                    'backlash_value': float(backlash_b_val) if backlash_b_val is not None else None
-                })
+            # ---- Extract MLC Offsets ----
+            mlc_offset_data = {
+                'beam_id': result_id,
+                'mlcMaxOffsetA': geoModel.get_MaxOffsetA(),
+                'mlcMaxOffsetB': geoModel.get_MaxOffsetB(),
+                'mlcMeanOffsetA': geoModel.get_MeanOffsetA(),
+                'mlcMeanOffsetB': geoModel.get_MeanOffsetB(),
+                'mlcLeavesA': json.dumps(mlc_leaves_a),  # Store as JSONB
+                'mlcLeavesB': json.dumps(mlc_leaves_b),  # Store as JSONB
+            }
             
-            backlash_a_result = self.db_adapter.upload_mlc_backlash(geocheck_id_result, backlash_a_data, 'a')
-            backlash_b_result = self.db_adapter.upload_mlc_backlash(geocheck_id_result, backlash_b_data, 'b')
+            # ---- Extract MLC Backlash data (A and B banks, leaves 11-50) ----
+            mlc_backlash_a = {}
+            mlc_backlash_b = {}
+            for i in range(11, 51):
+                mlc_backlash_a[f"leaf_{i}"] = geoModel.get_MLCBacklashA(i)
+                mlc_backlash_b[f"leaf_{i}"] = geoModel.get_MLCBacklashB(i)
             
-            # Return True if all critical uploads succeeded
-            # Beam upload is optional (we log warning but continue)
-            # Geocheck, leaves, and backlash are all required
-            overall_success = (geocheck_id_result is not None and 
-                             leaves_a_result and leaves_b_result and 
-                             backlash_a_result and backlash_b_result)
+            mlc_backlash_data = {
+                'beam_id': result_id,
+                'mlcBacklashMaxA': geoModel.get_MLCBacklashMaxA(),
+                'mlcBacklashMaxB': geoModel.get_MLCBacklashMaxB(),
+                'mlcBacklashMeanA': geoModel.get_MLCBacklashMeanA(),
+                'mlcBacklashMeanB': geoModel.get_MLCBacklashMeanB(),
+                'mlcBacklashA': json.dumps(mlc_backlash_a),  # Store as JSONB
+                'mlcBacklashB': json.dumps(mlc_backlash_b),  # Store as JSONB
+            }
             
-            if overall_success:
-                logger.info("Successfully uploaded all geometry check data")
-            else:
-                logger.warning("Some geometry check data uploads may have failed")
+            # ---- Extract Jaws data ----
+            jaws_data = {
+                'beam_id': result_id,
+                'jawX1': geoModel.get_JawX1(),
+                'jawX2': geoModel.get_JawX2(),
+                'jawY1': geoModel.get_JawY1(),
+                'jawY2': geoModel.get_JawY2(),
+            }
             
-            return overall_success
+            # ---- Extract Jaw Parallelism data ----
+            jaw_parallelism_data = {
+                'beam_id': result_id,
+                'jawParallelismX1': geoModel.get_JawParallelismX1(),
+                'jawParallelismX2': geoModel.get_JawParallelismX2(),
+                'jawParallelismY1': geoModel.get_JawParallelismY1(),
+                'jawParallelismY2': geoModel.get_JawParallelismY2(),
+            }
+            
+            # ---- Upload to geometry tables ----
+            # Uncomment and adjust table names when geometry tables are created
+            self.db_adapter.upload_beam_data('geometry_isocenter', isocenter_data)
+            self.db_adapter.upload_beam_data('geometry_collimation', collimation_data)
+            self.db_adapter.upload_beam_data('geometry_gantry', gantry_data)
+            self.db_adapter.upload_beam_data('geometry_couch', couch_data)
+            self.db_adapter.upload_beam_data('geometry_mlc', mlc_offset_data)
+            self.db_adapter.upload_beam_data('geometry_mlc_backlash', mlc_backlash_data)
+            self.db_adapter.upload_beam_data('geometry_jaws', jaws_data)
+            self.db_adapter.upload_beam_data('geometry_jaw_parallelism', jaw_parallelism_data)
+            
+            # ========================================================================
+            # END OF COMMENTED GEOMETRY DATA
+            # ========================================================================
+            
+            return result
 
         except Exception as e:
             logger.error(f"Error during Geo model upload: {e}", exc_info=True)

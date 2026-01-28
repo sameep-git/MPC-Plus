@@ -1,18 +1,20 @@
 import os
+from pylinac.core.image import XIM
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
-from .data_extractor import data_extractor
-from .image_extractor import image_extractor
-from .Uploader import Uploader
+from src.data_manipulation.ETL.data_extractor import data_extractor
+from src.data_manipulation.ETL.image_extractor import image_extractor
+from src.data_manipulation.ETL.Uploader import Uploader
 
-from ..models.EBeamModel import EBeamModel
-from ..models.XBeamModel import XBeamModel
-from ..models.Geo6xfffModel import Geo6xfffModel
-from ..models.ImageModel import ImageModel
+from src.data_manipulation.models.EBeamModel import EBeamModel
+from src.data_manipulation.models.XBeamModel import XBeamModel
+from src.data_manipulation.models.Geo6xfffModel import Geo6xfffModel
+from src.data_manipulation.models.ImageModel import ImageModel
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
+
 
 # Load environment variables from .env file in project root
 project_root = Path(__file__).parent.parent.parent.parent
@@ -45,6 +47,7 @@ class DataProcessor:
     # -------------------------------------------------------------------------
     # Generic helper method for beams
     # -------------------------------------------------------------------------
+
     def _init_beam_model(self, model_class, beam_type):
         """
         Generic initializer for any beam model.
@@ -61,7 +64,7 @@ class DataProcessor:
     # -------------------------------------------------------------------------
     # Generic helper method for images
     # -------------------------------------------------------------------------
-    def _init_beam_image(self, beam_type):
+    def _init_beam_image(self, beam_type, is_test=False):
         """
         Initialize an ImageModel for a given beam type and extract the image data.
 
@@ -73,11 +76,19 @@ class DataProcessor:
         image.set_type(beam_type)
         image.set_date(image._getDateFromPathName(self.image_path))
         image.set_machine_SN(image._getSNFromPathName(self.image_path))
-        self.image_ex.get_image(image)
-        print("Image Name: ", image.get_ImageName())
-        #return image  # optional if you want to keep a reference to the image object
+        image.set_image_name(image.generate_image_name())
+        image.set_image(XIM(image.get_path()))
+        image.convert_XIM_to_PNG()
+        #Process the image (Get flatness and symmetry from Pilinac FieldAnalysis)
+        if is_test: logger.info("Processing test image in image_extractor.py")
+        self.image_ex.process_image(image, is_test)
+        if is_test: 
+            logger.info("Test image processed & returned from image_extractor.py")
+            logger.info("Image Name: %s", image.get_image_name())
 
+        return image
 
+    
     # -------------------------------------------------------------------------
     # Internal beam dispatcher
     # -------------------------------------------------------------------------
@@ -98,6 +109,7 @@ class DataProcessor:
             "9e": (EBeamModel, "9e"),
             "12e": (EBeamModel, "12e"),
             "16e": (EBeamModel, "16e"),
+            "2.5x": (XBeamModel, "2.5x"),
             "10x": (XBeamModel, "10x"),
             "15x": (XBeamModel, "15x"),
             "6x": (Geo6xfffModel, "6x"),  # Geometry checks use 6x as the beam type
@@ -116,7 +128,19 @@ class DataProcessor:
                 # Initialize the correct beam model (EBeam, XBeam, etc.)
                 beam = self._init_beam_model(model_class, beam_type)
 
-                if is_test:
+                # --- Image Extraction for all beam types ---
+                logger.info(f"Extracting image data for {beam_type} beam...")
+                beam.set_image_model(self._init_beam_image(beam_type, is_test))
+                
+                ##Unsure of the cleanliness of this soln
+                #Problem: Beams need to hold flatness and sym of images
+                #Sol1: Data processor will tell beam to get  its vals from image
+                # ^ implemented soln
+                # Alt Soln: Image holds a direct link to its beam (Doublely Linked) 
+                # and updates its parent beam stats as they are calculated
+                beam.set_flat_and_sym_vals_from_image()
+
+                if(is_test):
                     logger.info("Running test extraction...")
                     self.data_ex.extractTest(beam)
                 else:
@@ -127,40 +151,23 @@ class DataProcessor:
                     # Connect to database using environment variables
                     # Connect to database using credentials from .env file
                     connection_params = {
-                        'url': os.getenv('SUPABASE_URL'),
-                        'key': os.getenv('SUPABASE_KEY')
+                        "url": os.getenv("SUPABASE_URL"),
+                        "key": os.getenv("SUPABASE_KEY"),
                     }
-                    
-                    if not connection_params['url'] or not connection_params['key']:
-                        error_msg = "Error: SUPABASE_URL and SUPABASE_KEY must be set in .env file"
-                        logger.error(error_msg)
+                    if(not self.up.connect(connection_params)):
+                        logger.error("Unable at connect to the database")
                         return
-                    
-                    logger.info(f"Connecting to Supabase with URL: {connection_params['url'][:30]}...")
-                    if self.up.connect(connection_params):
-                        logger.info("Successfully connected to Supabase, uploading beam data...")
-                        upload_result = self.up.upload(beam)  # Actually upload the data
-                        if upload_result:
-                            logger.info("Upload completed successfully")
-                        else:
-                            logger.warning("Upload returned False - check for errors above")
-                    else:
-                        logger.error("Failed to connect to Supabase")
-                    
+                    if(not self.up.upload(beam)):
+                        logger.error("Cannot upload to the database")
+                        return
+                    logger.info("Beam Uploading Complete")
                     self.up.close()
-                    logger.info("Supabase connection closed")
-
-                
-
-                # --- Image Extraction for all beam types ---
-                logger.debug(f"Extracting image data for {beam_type} beam...")
-                self._init_beam_image(beam_type)
                 return
 
         # --- No beam type matched ---
-        print(f"Unknown or unsupported beam type for path: {self.data_path}")
-        print("Ensure the folder name includes one of the supported identifiers:")
-        print("→ 6e, 9e, 12e, 16e, 10x, 15x, or 6x (6xfff)")
+        logger.error(f"Unknown or unsupported beam type for path: {self.data_path}")
+        logger.error("Ensure the folder name includes one of the supported identifiers:")
+        logger.error("→ 6e, 9e, 12e, 16e, 10x, 15x, or 6x (6xfff)")
 
     # -------------------------------------------------------------------------
     # Public entrypoints
@@ -170,5 +177,13 @@ class DataProcessor:
         self._process_beam(is_test=False)
 
     def RunTest(self):
-        """Run the test data processing workflow."""
+        """ Run the test data processing workflow.
+            For Testing Print logger.info to console
+        """
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         self._process_beam(is_test=True)
+
+    

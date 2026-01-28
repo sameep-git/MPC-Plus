@@ -1,6 +1,5 @@
 from abc import ABC
 from datetime import datetime
-from decimal import Decimal
 import re
 import xml.etree.ElementTree as ET
 import os
@@ -11,7 +10,8 @@ class AbstractBeamModel(ABC):
         self._path = ""
         self._date = None
         self._machine_SN = None
-        self._baseline = False
+        self._baseline = False;
+        self._imageModel = None
 
     # --- Getters ---
     def get_type(self):
@@ -27,7 +27,22 @@ class AbstractBeamModel(ABC):
         return self._machine_SN
 
     def get_baseline(self):
-        return self._baseline 
+        return self._baseline
+
+    def get_image_model(self):
+        return self._imageModel
+    
+    def get_symmetry_horizontal(self):
+        return self._symmetry_horizontal
+
+    def get_symmetry_vertical(self):
+        return self._symmetry_vertical
+
+    def get_flatness_horizontal(self):
+        return self._flatness_horizontal
+
+    def get_flatness_vertical(self):
+        return self._flatness_vertical
 
     # --- Setters ---
     def set_type(self, type_value):
@@ -44,6 +59,21 @@ class AbstractBeamModel(ABC):
     
     def set_baseline(self, baseline):
         self._baseline = baseline
+
+    def set_image_model(self, imageModel):
+        self._imageModel = imageModel
+    
+    def set_symmetry_horizontal(self, value):
+        self._symmetry_horizontal = value
+
+    def set_symmetry_vertical(self, value):
+        self._symmetry_vertical = value
+
+    def set_flatness_horizontal(self, value):
+        self._flatness_horizontal = value
+
+    def set_flatness_vertical(self, value):
+        self._flatness_vertical = value
 
     # --- Concrete utility methods shared by subclasses ---
     def _getDateFromPathName(self, path: str) -> datetime:
@@ -75,9 +105,8 @@ class AbstractBeamModel(ABC):
         """
         match = re.search(r'SN(\d+)', path)
         if not match:
-            raise ValueError(f"Could not extract machine ID from path: {path}")
-        # Return the full match including "SN" prefix
-        return match.group(0)
+            raise ValueError(f"Could not extract serial number from path: {path}")
+        return "SN" + (match.group(1))
     
     def _getIsBaselineFromPathName(self, pathName: str) -> bool:
         """
@@ -120,3 +149,19 @@ class AbstractBeamModel(ABC):
 
         except ET.ParseError as e:
             raise ValueError(f"Failed to parse XML file '{check_xml_path}': {e}")
+    
+    def set_flat_and_sym_vals_from_image(self):
+        """
+        Retrieve the image analysis model associated with the current image.
+        This model is responsible for computing field metrics such as
+        flatness and symmetry from the processed (PNG) image.
+        """
+        myImageModel = self.get_image_model()
+
+        # Extract and store horizontal and vertical flatness values
+        self.set_flatness_horizontal(myImageModel.get_flatness_horizontal())
+        self.set_flatness_vertical(myImageModel.get_flatness_vertical())
+
+        # Extract and store horizontal and vertical symmetry values
+        self.set_symmetry_horizontal(myImageModel.get_symmetry_horizontal())
+        self.set_symmetry_vertical(myImageModel.get_symmetry_vertical())

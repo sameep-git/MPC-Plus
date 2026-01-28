@@ -1,7 +1,5 @@
 from src.data_manipulation.models.AbstractBeamModel import AbstractBeamModel
-from datetime import datetime
 from decimal import Decimal
-import re
 
 class XBeamModel(AbstractBeamModel):
     def __init__(self):
