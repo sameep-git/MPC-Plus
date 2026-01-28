@@ -102,7 +102,8 @@ corrected_data = (
 )
 
 # Initialize field analysis
-my_img = FieldAnalysis(corrected_data)
+#my_img = FieldAnalysis(corrected_data)
+my_img = FieldAnalysis(XIM(r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e\BeamProfileCheck.xim"))
 
 # Perform flatness, symmetry, and other field metrics
 my_img.analyze()
@@ -111,14 +112,24 @@ my_img.analyze()
 print(my_img.results())
 
 # Display the analyzed image with pylinac overlays
-my_img.plot_analyzed_image()
+#my_img.plot_analyzed_image()
 
 # Generate a PDF report with results and annotated images
 my_img.publish_pdf(
     filename="src/image-experimentation/brae/get-damons-working/images-and-reports/Baseline0201vsRaw0207.pdf"
 )
 
+h = my_img.horiz_profile
 
+plt.figure()
+plt.plot(h.values)
+plt.title("Horizontal Profile")
+plt.xlabel("Pixel")
+plt.ylabel("Intensity")
+plt.grid(True)
+
+plt.savefig("horizontal_profile.png", dpi=300, bbox_inches="tight")
+plt.close()
 #plt.imshow(corrected_dicom1.pixel_array)
 #plt.show()
 
