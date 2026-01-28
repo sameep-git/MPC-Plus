@@ -10,8 +10,14 @@ class AbstractBeamModel(ABC):
         self._path = ""
         self._date = None
         self._machine_SN = None
-        self._baseline = False;
+        self._baseline = False
         self._imageModel = None
+        self._symmetry_horizontal = None
+        self._symmetry_vertical = None
+        self._flatness_horizontal = None
+        self._flatness_vertical = None
+        self._horizontal_profile_graph = None
+        self._vertical_profile_graph = None
 
     # --- Getters ---
     def get_type(self):
@@ -43,6 +49,12 @@ class AbstractBeamModel(ABC):
 
     def get_flatness_vertical(self):
         return self._flatness_vertical
+    
+    def get_horizontal_profile_graph(self):
+        return self._horizontal_profile_graph
+    
+    def get_vertical_profile_graph(self):
+        return self._vertical_profile_graph
 
     # --- Setters ---
     def set_type(self, type_value):
@@ -74,6 +86,12 @@ class AbstractBeamModel(ABC):
 
     def set_flatness_vertical(self, value):
         self._flatness_vertical = value
+
+    def set_horizontal_profile_graph(self, value):
+        self._horizontal_profile_graph = value
+
+    def set_vertical_profile_graph(self, value):
+        self._vertical_profile_graph = value
 
     # --- Concrete utility methods shared by subclasses ---
     def _getDateFromPathName(self, path: str) -> datetime:
@@ -165,3 +183,7 @@ class AbstractBeamModel(ABC):
         # Extract and store horizontal and vertical symmetry values
         self.set_symmetry_horizontal(myImageModel.get_symmetry_horizontal())
         self.set_symmetry_vertical(myImageModel.get_symmetry_vertical())
+
+        # Extract and store horizontal and vertical flatness graphs
+        self.set_vertical_profile_graph(myImageModel.get_vertical_profile_graph())
+        self.set_horizontal_profile_graph(myImageModel.get_horizontal_profile_graph())

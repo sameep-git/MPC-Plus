@@ -10,6 +10,8 @@ class ImageModel(AbstractBeamModel):
         self._flatness_vertical = None
         self._flood_image_path = None
         self._dark_image_path = None
+        self._flatness_graph = None
+        self._symmetry_graph = None
 
     # Getters
     def get_image(self):
@@ -17,17 +19,6 @@ class ImageModel(AbstractBeamModel):
 
     def get_image_name(self):
         return self._image_name
-
-    def get_symmetry_horizontal(self):
-        return self._symmetry_horizontal
-
-    def get_symmetry_vertical(self):
-        return self._symmetry_vertical
-
-    def get_flatness_horizontal(self):
-        return self._flatness_horizontal
-
-    def get_flatness_vertical(self):
         return self._flatness_vertical
 
     def get_flood_image_path(self):
@@ -35,6 +26,7 @@ class ImageModel(AbstractBeamModel):
 
     def get_dark_image_path(self):
         return self._dark_image_path
+    
 
     # Setters
     def set_image(self, image):
@@ -43,24 +35,12 @@ class ImageModel(AbstractBeamModel):
     def set_image_name(self, image_name):
         self._image_name = image_name
 
-    def set_symmetry_horizontal(self, value):
-        self._symmetry_horizontal = value
-
-    def set_symmetry_vertical(self, value):
-        self._symmetry_vertical = value
-
-    def set_flatness_horizontal(self, value):
-        self._flatness_horizontal = value
-
-    def set_flatness_vertical(self, value):
-        self._flatness_vertical = value
-
     def set_flood_image_path(self, flood_image_path):
         self._flood_image_path = flood_image_path
 
     def set_dark_image_path(self, dark_image_path):
         self._dark_image_path = dark_image_path
-
+    
     # Image naming helper
     def generate_image_name(self):
         """

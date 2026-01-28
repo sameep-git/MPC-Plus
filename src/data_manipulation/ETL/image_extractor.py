@@ -52,27 +52,8 @@ class image_extractor:
         analysis.analyze()
         r = analysis.results_data()
         
-        h = analysis.horiz_profile
-        plt.figure()
-        plt.plot(h.values)
-        plt.title("Horizontal Profile")
-        plt.xlabel("Pixel")
-        plt.ylabel("Intensity")
-        plt.grid(True)
-
-        plt.savefig("horizontal_profile.png", dpi=280, bbox_inches="tight")
-        plt.close()
-
-        v = analysis.vert_profile
-        plt.figure()
-        plt.plot(v.values)
-        plt.title("Vertical Profile")
-        plt.xlabel("Pixel")
-        plt.ylabel("Intensity")
-        plt.grid(True)
-
-        plt.savefig("vertical_profile.png", dpi=280, bbox_inches="tight")
-        plt.close()
+        #Extract and store horizontal and vertical flatness graphs
+        self.create_graphs(analysis, imageModel)
 
         imageModel.set_symmetry_horizontal(r.protocol_results['symmetry_horizontal'])
         imageModel.set_symmetry_vertical(r.protocol_results['symmetry_vertical'])
@@ -85,89 +66,32 @@ class image_extractor:
             logger.info(f"Symmetry (Horizontal): {imageModel.get_symmetry_horizontal()}")
             logger.info(f"Symmetry (Vertical):   {imageModel.get_symmetry_vertical()}")
             # Display Flatness and Symmetry Profiles
-            h = analysis.horiz_profile
-            plt.figure()
-            plt.plot(h.values)
-            plt.title("Horizontal Profile")
-            plt.xlabel("Pixel")
-            plt.ylabel("Intensity")
-            plt.grid(True)
-            plt.show()
+            fig = imageModel.get_horizontal_profile_graph()
+            fig.savefig("horizontal_profile.png") 
+            fig = imageModel.get_vertical_profile_graph()
+            fig.savefig("vertical_profile.png") 
 
-            v = analysis.vert_profile
-            plt.figure()
-            plt.plot(v.values)
-            plt.title("Vertical Profile")
-            plt.xlabel("Pixel")
-            plt.ylabel("Intensity")
-            plt.grid(True)
-            plt.show()
-    # def process_image(self,clinical_path, dark_path, flood_path, is_test=False):
-    #     # Load images (you may need to convert XIM to a format pylinac accepts)
-    #     logger.info(f"Clinical path: {clinical_path}")
-    #     logger.info(f"Dark path: {dark_path}")
-    #     logger.info(f"Flood path: {flood_path}")
-    #     clinical = XIM(clinical_path)
-    #     clinical = np.array(clinical)
-    #     dark = XIM(dark_path)
-    #     dark = np.array(dark)
-    #     flood = XIM(flood_path)
-    #     flood = np.array(flood)
-        
-    #     # Apply corrections
-    #     corrected_flood = flood - dark
-    #     corrected_clinical = clinical - dark
-        
-    #     # Avoid division by zero
-    #     threshold = 1e-6
-    #     corrected_flood[corrected_flood < threshold] = threshold
-        
-    #     # Normalize
-    #     #normalized = corrected_clinical / corrected_flood
-    #     normalized = np.divide(
-    #     corrected_clinical,
-    #     corrected_flood,
-    #     out=np.zeros_like(corrected_clinical, dtype=np.float32),
-    #     where=corrected_flood > threshold
-    #     )
+    
+    def create_graphs(self, analysis, imageModel):
+        # Horizontal profile
+        h = analysis.horiz_profile
+        fig_h, ax_h = plt.subplots()  # Create Figure and Axes
+        ax_h.plot(h.values)
+        ax_h.set_title("Horizontal Profile")
+        ax_h.set_xlabel("Pixel")
+        ax_h.set_ylabel("Intensity")
+        ax_h.grid(True)
+        imageModel.set_horizontal_profile_graph(fig_h)  # store the Figure
+        plt.close(fig_h)  # prevent automatic display
 
-    #     img = ArrayImage(normalized, dpi = 280)
-    #     analysis = FieldAnalysis(img)
-        
-    #     print(analysis)
-    #     analysis.analyze()
-    #     r = analysis.results()
-    #     print(r)
-    #     r = analysis.results_data()
-    #     print(r)
-        
-    #     h = analysis.horiz_profile
-    #     plt.figure()
-    #     plt.plot(h.values)
-    #     plt.title("Horizontal Profile")
-    #     plt.xlabel("Pixel")
-    #     plt.ylabel("Intensity")
-    #     plt.grid(True)
-
-    #     plt.savefig("horizontal_profile.png", dpi=300, bbox_inches="tight")
-    #     plt.close()
-
-    #     v = analysis.vert_profile
-    #     plt.figure()
-    #     plt.plot(v.values)
-    #     plt.title("Vertical Profile")
-    #     plt.xlabel("Pixel")
-    #     plt.ylabel("Intensity")
-    #     plt.grid(True)
-
-    #     plt.savefig("vertical_profile.png", dpi=300, bbox_inches="tight")
-    #     plt.close()
-
-    #     return {
-    #         'flatness_x': r.protocol_results['flatness_horizontal'],
-    #         'flatness_y': r.protocol_results['flatness_vertical'],
-    #         'symmetry_x': r.protocol_results['symmetry_horizontal'],
-    #         'symmetry_y': r.protocol_results['symmetry_vertical']
-    #     }
-
+        # Vertical profile
+        v = analysis.vert_profile
+        fig_v, ax_v = plt.subplots()
+        ax_v.plot(v.values)
+        ax_v.set_title("Vertical Profile")
+        ax_v.set_xlabel("Pixel")
+        ax_v.set_ylabel("Intensity")
+        ax_v.grid(True)
+        imageModel.set_vertical_profile_graph(fig_v)
+        plt.close(fig_v)
 
