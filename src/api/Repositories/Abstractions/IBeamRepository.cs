@@ -13,9 +13,9 @@ public interface IBeamRepository
     Task<IReadOnlyList<Beam>> GetAllAsync(
         string? machineId = null,
         string? type = null,
-        DateOnly? date = null,
-        DateOnly? startDate = null,
-        DateOnly? endDate = null,
+        DateTime? date = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -19,28 +19,35 @@ public class SupabaseBeamRepository : IBeamRepository
     }
 
     public async Task<IReadOnlyList<Beam>> GetAllAsync(
-        string? machineId = null, string? type = null, DateOnly? date = null,
-        DateOnly? startDate = null, DateOnly? endDate = null,
+        string? machineId = null, string? type = null, DateTime? date = null,
+        DateTime? startDate = null, DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            var response = await _client.From<BeamEntity>().Get();
-            var beams = response.Models.Select(e => e.ToModel()).ToList();
-            
+            Supabase.Postgrest.Interfaces.IPostgrestTable<BeamEntity> query = _client.From<BeamEntity>();
+
             if (!string.IsNullOrWhiteSpace(machineId))
-                beams = beams.Where(b => b.MachineId == machineId).ToList();
-            if (!string.IsNullOrWhiteSpace(type))
-                beams = beams.Where(b => b.Type == type).ToList();
-            if (date.HasValue)
-                beams = beams.Where(b => b.Date == date.Value).ToList();
-            if (startDate.HasValue)
-                beams = beams.Where(b => b.Date >= startDate.Value).ToList();
-            if (endDate.HasValue)
-                beams = beams.Where(b => b.Date <= endDate.Value).ToList();
+                query = query.Filter("machine_id", Supabase.Postgrest.Constants.Operator.Equals, machineId);
             
-            return beams.OrderByDescending(b => b.Date).ThenBy(b => b.Type).ToList().AsReadOnly();
+            if (!string.IsNullOrWhiteSpace(type))
+                query = query.Filter("type", Supabase.Postgrest.Constants.Operator.Equals, type);
+            
+            if (date.HasValue)
+                query = query.Filter("date", Supabase.Postgrest.Constants.Operator.Equals, date.Value.ToString("yyyy-MM-dd"));
+            
+            if (startDate.HasValue)
+                query = query.Filter("date", Supabase.Postgrest.Constants.Operator.GreaterThanOrEqual, startDate.Value.ToString("yyyy-MM-dd"));
+            
+            if (endDate.HasValue)
+                query = query.Filter("date", Supabase.Postgrest.Constants.Operator.LessThanOrEqual, endDate.Value.ToString("yyyy-MM-dd"));
+
+            var response = await query
+                .Order("timestamp", Supabase.Postgrest.Constants.Ordering.Descending)
+                .Get();
+
+            return response.Models.Select(e => e.ToModel()).ToList().AsReadOnly();
         }
         catch (Exception ex)
         {

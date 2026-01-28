@@ -17,7 +17,7 @@ public abstract class GeoCheckEntityBase : BaseModel
     public string Type { get; set; } = default!;
 
     [Column("date")]
-    public DateOnly Date { get; set; }
+    public DateTime Date { get; set; }
 
     [Column("machine_id")]
     public string MachineId { get; set; } = default!;
@@ -145,6 +145,12 @@ public abstract class GeoCheckEntityBase : BaseModel
     [Column("note")]
     public string? Note { get; set; }
 
+    [Column("approved_by")]
+    public string? ApprovedBy { get; set; }
+
+    [Column("approved_date")]
+    public DateTime? ApprovedDate { get; set; }
+
     /// <summary>
     /// Converts this entity to a domain model.
     /// </summary>
@@ -193,7 +199,9 @@ public abstract class GeoCheckEntityBase : BaseModel
             JawParallelismX2 = JawParallelismX2,
             JawParallelismY1 = JawParallelismY1,
             JawParallelismY2 = JawParallelismY2,
-            Note = Note
+            Note = Note,
+            ApprovedBy = ApprovedBy,
+            ApprovedDate = ApprovedDate
         };
     }
 
@@ -244,6 +252,8 @@ public abstract class GeoCheckEntityBase : BaseModel
         entity.JawParallelismY1 = geoCheck.JawParallelismY1;
         entity.JawParallelismY2 = geoCheck.JawParallelismY2;
         entity.Note = geoCheck.Note;
+        entity.ApprovedBy = geoCheck.ApprovedBy;
+        entity.ApprovedDate = geoCheck.ApprovedDate;
     }
 
     private static Dictionary<string, double>? DeserializeLeaves(object? data)

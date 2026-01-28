@@ -43,10 +43,19 @@ public class ResultsController : ControllerBase
         }
 
         // Get all beam checks for this machine, month, and year
-        var startDate = new DateOnly(year, month, 1);
+        var startDate = new DateTime(year, month, 1);
         var endDate = month == 12 
-            ? new DateOnly(year + 1, 1, 1).AddDays(-1)
-            : new DateOnly(year, month + 1, 1).AddDays(-1);
+            ? new DateTime(year + 1, 1, 1).AddDays(-1).AddTicks(-1) // End of last day of month? Or just cover the day.
+            // Actually Repositories usually check date equality or range. 
+            // If we want the whole month, we should probably set time to end of day if time matters.
+            // But let's stick to start of day for boundaries if repositories treat them inclusively?
+            // The repositories use Date >= startDate and Date <= endDate.
+            // To capture everything in the month, startDate should be YYYY-MM-01 00:00:00
+            // endDate should be YYYY-MM-Last 23:59:59 OR YYYY-(M+1)-01 00:00:00 exclusive.
+            // But the repository logic is: b.Date.Date >= startDate.Value.Date
+            // and b.Date.Date <= endDate.Value.Date.
+            // This compares just the dates. So using start of day is correct.
+            : new DateTime(year, month + 1, 1).AddDays(-1);
         
         var beamChecks = await _beamRepository.GetAllAsync(
             machineId: machineId,
@@ -60,44 +69,58 @@ public class ResultsController : ControllerBase
             endDate: endDate,
             cancellationToken: cancellationToken);
 
-    // Group by date and aggregate status + example display values
-    var dailyChecks = new Dictionary<DateOnly, (string? beamStatus, double? beamValue, string? geoStatus, double? geoValue)>();
+    // Group by date and aggregate status + example display values + approval status + counts
+    var dailyChecks = new Dictionary<DateOnly, (string? beamStatus, double? beamValue, bool beamApproved, int beamCount, string? geoStatus, double? geoValue, bool geoApproved, int geoCount)>();
         
         // Process beam checks
         foreach (var check in beamChecks)
         {
-            var date = check.Date;
+            var date = DateOnly.FromDateTime(check.Date);
             var status = DetermineCheckStatus(check);
-            // derive a single numeric value for display (prefer RelOutput, then RelUniformity, then CenterShift)
             double? value = check.RelOutput ?? check.RelUniformity ?? check.CenterShift;
+            bool isApproved = !string.IsNullOrEmpty(check.ApprovedBy);
 
             if (dailyChecks.ContainsKey(date))
             {
-                var (existingBeamStatus, existingBeamValue, geoStatus, geoValue) = dailyChecks[date];
-                dailyChecks[date] = (AggregateStatuses(existingBeamStatus, status), existingBeamValue ?? value, geoStatus, geoValue);
+                var (existingBeamStatus, existingBeamValue, existingBeamApproved, existingBeamCount, geoStatus, geoValue, geoApproved, geoCount) = dailyChecks[date];
+                // Aggregate approval: must ALL be approved
+                bool newBeamApproved = existingBeamApproved && isApproved;
+                dailyChecks[date] = (AggregateStatuses(existingBeamStatus, status), existingBeamValue ?? value, newBeamApproved, existingBeamCount + 1, geoStatus, geoValue, geoApproved, geoCount);
             }
             else
             {
-                dailyChecks[date] = (status, value, null, null);
+                // Default geoApproved true if no geo checks yet
+                dailyChecks[date] = (status, value, isApproved, 1, null, null, true, 0); 
             }
         }
 
         // Process geometry checks
         foreach (var check in geoChecks)
         {
-            var date = check.Date;
+            var date = DateOnly.FromDateTime(check.Date);
             var status = DetermineGeoCheckStatus(check);
-            // derive a single numeric value for display (prefer RelativeOutput, then RelativeUniformity, then CenterShift, then IsoCenterSize)
             double? value = check.RelativeOutput ?? check.RelativeUniformity ?? check.CenterShift ?? check.IsoCenterSize;
+            bool isApproved = !string.IsNullOrEmpty(check.ApprovedBy);
 
             if (dailyChecks.ContainsKey(date))
             {
-                var (beamStatus, beamValue, existingGeoStatus, existingGeoValue) = dailyChecks[date];
-                dailyChecks[date] = (beamStatus, beamValue, AggregateStatuses(existingGeoStatus, status), existingGeoValue ?? value);
+                var (beamStatus, beamValue, beamApproved, beamCount, existingGeoStatus, existingGeoValue, existingGeoApproved, existingGeoCount) = dailyChecks[date];
+                
+                // If existingGeoStatus is null, it means this is the first geo check for this date (even if beam checks existed)
+                // So start with isApproved.
+                // If not null, then AND it.
+                bool newGeoApproved = (existingGeoStatus == null) ? isApproved : (existingGeoApproved && isApproved);
+                
+                // If existingGeoStatus is NOT null, increment count. But if it IS null (first geo check), count becomes 1.
+                // Wait, existingGeoCount starts at 0 from beam loop initialization.
+                // So simply existingGeoCount + 1.
+
+                dailyChecks[date] = (beamStatus, beamValue, beamApproved, beamCount, AggregateStatuses(existingGeoStatus, status), existingGeoValue ?? value, newGeoApproved, existingGeoCount + 1);
             }
             else
             {
-                dailyChecks[date] = (null, null, status, value);
+                // No beam checks for this date, only geo checks
+                dailyChecks[date] = (null, null, true, 0, status, value, isApproved, 1); 
             }
         }
 
@@ -109,7 +132,11 @@ public class ResultsController : ControllerBase
                 BeamCheckStatus = kvp.Value.beamStatus,
                 GeometryCheckStatus = kvp.Value.geoStatus,
                 BeamValue = kvp.Value.beamValue,
-                GeometryValue = kvp.Value.geoValue
+                GeometryValue = kvp.Value.geoValue,
+                BeamApproved = kvp.Value.beamApproved,
+                GeometryApproved = kvp.Value.geoApproved,
+                BeamCount = kvp.Value.beamCount,
+                GeometryCheckCount = kvp.Value.geoCount
             })
             .ToList();
 

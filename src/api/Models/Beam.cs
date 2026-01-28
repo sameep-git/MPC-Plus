@@ -12,7 +12,10 @@ public class Beam
     public required string Type { get; set; }
 
     /// <summary>Date of the beam data.</summary>
-    public required DateOnly Date { get; set; }
+    public required DateTime Date { get; set; }
+
+    /// <summary>High-precision timestamp of the beam data.</summary>
+    public DateTime? Timestamp { get; set; }
 
     /// <summary>File path to the beam data.</summary>
     public string? Path { get; set; }
@@ -33,10 +36,10 @@ public class Beam
     public string? Note { get; set; }
 
     /// <summary>Name of the person who accepted/signed off the beam check.</summary>
-    public string? AcceptedBy { get; set; }
+    public string? ApprovedBy { get; set; }
 
     /// <summary>Date when the beam check was accepted/signed off.</summary>
-    public DateTime? AcceptedDate { get; set; }
+    public DateTime? ApprovedDate { get; set; }
 
     /// <summary>
     /// Convenience property representing a single numeric value to display in UIs.
@@ -44,5 +47,25 @@ public class Beam
     /// This is not persisted to the database; it's computed by repositories.
     /// </summary>
     public double? Value { get; set; }
+
+    /// <summary>
+    /// Overall status of the beam check (e.g., PASS, FAIL). Computed dynamically.
+    /// </summary>
+    public string? Status { get; set; }
+
+    /// <summary>
+    /// Status of the relative output check. Computed dynamically.
+    /// </summary>
+    public string? RelOutputStatus { get; set; }
+
+    /// <summary>
+    /// Status of the relative uniformity check. Computed dynamically.
+    /// </summary>
+    public string? RelUniformityStatus { get; set; }
+
+    /// <summary>
+    /// Status of the center shift check. Computed dynamically.
+    /// </summary>
+    public string? CenterShiftStatus { get; set; }
 }
 

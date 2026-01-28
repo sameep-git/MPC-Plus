@@ -12,7 +12,7 @@ public class GeoCheck
     public required string Type { get; set; }
 
     /// <summary>Date of the geometry check.</summary>
-    public required DateOnly Date { get; set; }
+    public required DateTime Date { get; set; }
 
     /// <summary>Associated machine identifier.</summary>
     public required string MachineId { get; set; }
@@ -139,4 +139,10 @@ public class GeoCheck
 
     /// <summary>Notes about the geometry check.</summary>
     public string? Note { get; set; }
+
+    /// <summary>Name of the person who accepted/signed off the geometry check.</summary>
+    public string? ApprovedBy { get; set; }
+
+    /// <summary>Date when the geometry check was accepted/signed off.</summary>
+    public DateTime? ApprovedDate { get; set; }
 }

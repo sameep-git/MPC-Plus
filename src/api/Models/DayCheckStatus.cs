@@ -24,5 +24,21 @@ public class DayCheckStatus
     /// Convenience numeric value to show in the UI table for the geometry check.
     /// This is derived from geo metrics (relativeOutput, relativeUniformity, centerShift, isoCenterSize) when available.
     /// </summary>
+    /// <summary>
+    /// Convenience numeric value to show in the UI table for the geometry check.
+    /// This is derived from geo metrics (relativeOutput, relativeUniformity, centerShift, isoCenterSize) when available.
+    /// </summary>
     public double? GeometryValue { get; set; }
+
+    /// <summary>Whether the daily beam check is approved.</summary>
+    public bool BeamApproved { get; set; }
+
+    /// <summary>Whether the daily geometry check is approved.</summary>
+    public bool GeometryApproved { get; set; }
+
+    /// <summary>Number of beam checks for the day.</summary>
+    public int BeamCount { get; set; }
+
+    /// <summary>Number of geometry checks for the day.</summary>
+    public int GeometryCheckCount { get; set; }
 }
