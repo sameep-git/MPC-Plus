@@ -78,14 +78,17 @@ class DataProcessor:
         image.set_machine_SN(image._getSNFromPathName(self.image_path))
         image.set_image_name(image.generate_image_name())
         image.set_image(XIM(image.get_path()))
-        {
-            #Image path has suffix "BeamProfileCheck.xim", remove and add "Flood" and "Dark" to get flood and dark image paths
-            image.set_flood_image_path(image.get_path().replace("BeamProfileCheck.xim", "Floodfield-Raw.xim"))
-            image.set_dark_image_path(image.get_path().replace("BeamProfileCheck.xim", "Offset.dat"))
-        }
+        #Image path has suffix "BeamProfileCheck.xim", remove and add "Flood" and "Dark" to get flood and dark image paths
+        image.set_flood_image_path(
+            image.get_path().replace("BeamProfileCheck.xim", "Floodfield-Raw.xim")
+            )
+        image.set_dark_image_path(
+            image.get_path().replace("BeamProfileCheck.xim", "Offset.dat")
+            )
         #Process the image (Get flatness and symmetry from Pilinac FieldAnalysis)
         if is_test: logger.info("Processing test image in image_extractor.py")
         self.image_ex.process_image(image, is_test)
+        #self.image_ex.process_image(image.get_path(), image.get_dark_image_path(), image.get_flood_image_path(), is_test)
         image.convert_XIM_to_PNG()
         if is_test: 
             logger.info("Test image processed & returned from image_extractor.py")

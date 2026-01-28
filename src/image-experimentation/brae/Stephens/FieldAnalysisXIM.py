@@ -6,9 +6,10 @@ from pylinac.core.image import XIM , ArrayImage
 import matplotlib.pyplot as plt
 
 def main():
-    cp = r"src\image-experimentation\brae\Stephens\BeamProfileCheck.xim"
-    dp = r"src\image-experimentation\brae\Stephens\Offset.dat"
-    fp = r"src\image-experimentation\brae\Stephens\Floodfield-Raw.xim"
+    path = r"data\csv_data\NDS-WKS-SN6543-2015-09-18-08-06-01-0000-BeamCheckTemplate2.5x"
+    cp = path + r"\BeamProfileCheck.xim"
+    dp = path + r"\Offset.dat"
+    fp = path + r"\Floodfield-Raw.xim"
     results = process_image(cp, dp, fp)
     print(results)
     
