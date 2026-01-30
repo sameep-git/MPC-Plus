@@ -29,42 +29,42 @@ public class GeoCheckController : ControllerBase
         [FromQuery(Name = "end-date")] string? endDate = null,
         CancellationToken cancellationToken = default)
     {
-        DateOnly? dateOnly = null;
+        DateTime? dateDt = null;
         if (!string.IsNullOrWhiteSpace(date))
         {
-            if (!DateOnly.TryParse(date, out var parsedDate))
+            if (!DateTime.TryParse(date, out var parsedDate))
             {
                 return BadRequest($"Invalid date format: {date}");
             }
-            dateOnly = parsedDate;
+            dateDt = parsedDate;
         }
 
-        DateOnly? startDateOnly = null;
+        DateTime? startDateDt = null;
         if (!string.IsNullOrWhiteSpace(startDate))
         {
-            if (!DateOnly.TryParse(startDate, out var parsedStartDate))
+            if (!DateTime.TryParse(startDate, out var parsedStartDate))
             {
                 return BadRequest($"Invalid start-date format: {startDate}");
             }
-            startDateOnly = parsedStartDate;
+            startDateDt = parsedStartDate;
         }
 
-        DateOnly? endDateOnly = null;
+        DateTime? endDateDt = null;
         if (!string.IsNullOrWhiteSpace(endDate))
         {
-            if (!DateOnly.TryParse(endDate, out var parsedEndDate))
+            if (!DateTime.TryParse(endDate, out var parsedEndDate))
             {
                 return BadRequest($"Invalid end-date format: {endDate}");
             }
-            endDateOnly = parsedEndDate;
+            endDateDt = parsedEndDate;
         }
 
         var geoChecks = await _repository.GetAllAsync(
             machineId: machineId,
             type: type,
-            date: dateOnly,
-            startDate: startDateOnly,
-            endDate: endDateOnly,
+            date: dateDt,
+            startDate: startDateDt,
+            endDate: endDateDt,
             cancellationToken: cancellationToken);
 
         return Ok(geoChecks);
@@ -142,4 +142,42 @@ public class GeoCheckController : ControllerBase
 
         return NoContent();
     }
+    [HttpPost("accept")]
+    public async Task<ActionResult> Accept([FromBody] AcceptGeoCheckRequest request, CancellationToken cancellationToken)
+    {
+        if (request.GeoCheckIds == null || !request.GeoCheckIds.Any())
+        {
+            return BadRequest("No geometry check IDs provided.");
+        }
+
+        var results = new List<GeoCheck>();
+        var errors = new List<string>();
+
+        foreach (var id in request.GeoCheckIds)
+        {
+            var geoCheck = await _repository.GetByIdAsync(id, cancellationToken);
+            if (geoCheck is null)
+            {
+                errors.Add($"Geometry check with id '{id}' was not found.");
+                continue;
+            }
+
+            geoCheck.ApprovedBy = request.ApprovedBy;
+            geoCheck.ApprovedDate = DateTime.UtcNow;
+
+            var updated = await _repository.UpdateAsync(geoCheck, cancellationToken);
+            if (!updated)
+            {
+                errors.Add($"Failed to update geometry check '{id}'.");
+            }
+            else
+            {
+                results.Add(geoCheck);
+            }
+        }
+
+        return Ok(results);
+    }
 }
+
+public record AcceptGeoCheckRequest(IEnumerable<string> GeoCheckIds, string ApprovedBy);

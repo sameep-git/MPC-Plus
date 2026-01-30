@@ -17,7 +17,7 @@ public class BeamEntity : BaseModel
     public string Type { get; set; } = default!;
 
     [Column("date")]
-    public DateOnly Date { get; set; }
+    public DateTime Date { get; set; }
 
     [Column("path")]
     public string? Path { get; set; }
@@ -37,11 +37,14 @@ public class BeamEntity : BaseModel
     [Column("note")]
     public string? Note { get; set; }
 
-    [Column("accepted_by")]
-    public string? AcceptedBy { get; set; }
+    [Column("approved_by")]
+    public string? ApprovedBy { get; set; }
 
-    [Column("accepted_date")]
-    public DateTime? AcceptedDate { get; set; }
+    [Column("approved_date")]
+    public DateTime? ApprovedDate { get; set; }
+
+    [Column("timestamp")]
+    public DateTime? Timestamp { get; set; }
 
     /// <summary>
     /// Converts this entity to a domain model.
@@ -52,14 +55,15 @@ public class BeamEntity : BaseModel
             Id = Id,
             Type = Type,
             Date = Date,
+            Timestamp = Timestamp,
             Path = Path,
             RelUniformity = RelUniformity,
             RelOutput = RelOutput,
             CenterShift = CenterShift,
             MachineId = MachineId,
             Note = Note,
-            AcceptedBy = AcceptedBy,
-            AcceptedDate = AcceptedDate
+            ApprovedBy = ApprovedBy,
+            ApprovedDate = ApprovedDate
         };
 
     /// <summary>
@@ -71,13 +75,14 @@ public class BeamEntity : BaseModel
             Id = beam.Id,
             Type = beam.Type,
             Date = beam.Date,
+            Timestamp = beam.Timestamp,
             Path = beam.Path,
             RelUniformity = beam.RelUniformity,
             RelOutput = beam.RelOutput,
             CenterShift = beam.CenterShift,
             MachineId = beam.MachineId,
             Note = beam.Note,
-            AcceptedBy = beam.AcceptedBy,
-            AcceptedDate = beam.AcceptedDate
+            ApprovedBy = beam.ApprovedBy,
+            ApprovedDate = beam.ApprovedDate
         };
 }
