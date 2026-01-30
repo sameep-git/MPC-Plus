@@ -8,106 +8,90 @@ Supported Image Types:
     - BeamProfileCheck.xim
 """
 
-#import pylinac as pl
-from pylinac import FieldAnalysis
-from pylinac import image as imgPylinac
-from pylinac.core.image import XIM
-import numpy as np
 import logging
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from pylinac.field_analysis import FieldAnalysis
+from pylinac.core.image import XIM, ArrayImage
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
 
 class image_extractor:
-    def process_image(self, image, is_test=False):
+    def process_image(self,imageModel, is_test=False):
+        # Load images (you may need to convert XIM to a format pylinac accepts)
+        clinicalPath = imageModel.get_path()
+        darkPath = imageModel.get_dark_image_path()
+        floodPath = imageModel.get_flood_image_path()
+        #Load images as numpy arrays
+        clinical = np.array(XIM(clinicalPath))
+        dark = np.array(XIM(darkPath))
+        flood = np.array(XIM(floodPath))
         
-        """
-        TODO: Extract the image from the database that is a baseline
-        """
-        baseline_img = XIM(r"data/csv_data/NDS-WKS-SN6543-2025-09-18-08-06-01-0004-BeamCheckTemplate6e/BeamProfileCheck.xim")
-        baseline_img_png = np.asarray(baseline_img)
-        raw_img_png = image.get_image()
-
-        # -------------------------------------------------------------------------
-        # Small value added to avoid division by zero.
-        # Some baseline pixels may be zero or extremely small (dead pixels, edges).
-        # This keeps the math stable without affecting real image values.
-        # -------------------------------------------------------------------------
-        eps = 1e-8
-
-        # -------------------------------------------------------------------------
-        # Compute the mean intensity of the baseline image.
-        # This is used to re-scale the corrected image so overall brightness
-        # stays consistent with the baseline.
-        # -------------------------------------------------------------------------
-        mean_baseline = float(np.mean(baseline_img_png))
-
-        # -------------------------------------------------------------------------
-        # Perform pixel-by-pixel normalization:
-        #   1. Divide the raw image by the baseline image
-        #   2. Add eps to prevent divide-by-zero
-        #   3. Multiply by the baseline mean to preserve intensity scale
-        #
-        # This corrects detector non-uniformity while keeping physics intact.
-        # -------------------------------------------------------------------------
-        corrected = (raw_img_png / (baseline_img_png + eps)) * mean_baseline
-        corrected = raw_img_png.astype(np.float32)
-
-        # -------------------------------------------------------------------------
-        # Convert the corrected NumPy array back into a DICOM image.
-        # Geometry metadata (SID, gantry, collimator, couch) is required
-        # so pylinac can properly analyze the image.
-        # -------------------------------------------------------------------------
-        # print("Corrected stats:")
-        # print("  min:", np.min(corrected))
-        # print("  max:", np.max(corrected))
-        # print("  mean:", np.mean(corrected))
-        # print("  NaNs:", np.isnan(corrected).any())
-        # print("  Infs:", np.isinf(corrected).any())
-        corrected_dicom = imgPylinac.array_to_dicom(
-            corrected,
-            sid=1000,
-            gantry=0,
-            coll=0,
-            couch=0,
-            dpi=280
-        )
-
-        # Save the corrected DICOM image to disk
-        corrected_dicom.save_as(
-            "src/image-experimentation/brae/get-damons-working/images-and-reports/Baseline0201vsRaw0207.dcm"
-        )
-
-        # -------------------------------------------------------------------------
-        # Run pylinac Field Analysis on the corrected DICOM image
-        # -------------------------------------------------------------------------
-        corrected_data = (
-            "src/image-experimentation/brae/get-damons-working/images-and-reports/"
-            "Baseline0201vsRaw0207.dcm"
-        )
-
-        # Initialize field analysis
-        my_img = FieldAnalysis(corrected_data)
-        # Perform flatness, symmetry, and other field metrics
-        my_img.analyze()
-        r = my_img.results_data()
-
+        # Apply corrections
+        corrected_flood = flood - dark
+        corrected_clinical = clinical - dark
         
-        image.set_symmetry_horizontal(r.protocol_results['symmetry_horizontal'])
-        image.set_symmetry_vertical(r.protocol_results['symmetry_vertical'])
-        image.set_flatness_horizontal(r.protocol_results['flatness_horizontal'])
-        image.set_flatness_vertical(r.protocol_results['flatness_vertical'])
+        # Avoid division by zero
+        threshold = 1e-6
+        corrected_flood[corrected_flood < threshold] = threshold
+        
+        # Normalize
+        #normalized = corrected_clinical / corrected_flood
+        normalized = np.divide(
+        corrected_clinical,
+        corrected_flood,
+        out=np.zeros_like(corrected_clinical, dtype=np.float32),
+        where=corrected_flood > threshold
+        )
+
+        img = ArrayImage(normalized, dpi = 280)
+        analysis = FieldAnalysis(img)
+        analysis.analyze()
+        r = analysis.results_data()
+        
+        #Extract and store horizontal and vertical flatness graphs
+        self.create_graphs(analysis, imageModel)
+
+        imageModel.set_symmetry_horizontal(r.protocol_results['symmetry_horizontal'])
+        imageModel.set_symmetry_vertical(r.protocol_results['symmetry_vertical'])
+        imageModel.set_flatness_horizontal(r.protocol_results['flatness_horizontal'])
+        imageModel.set_flatness_vertical(r.protocol_results['flatness_vertical'])
         if is_test:
             # Print numerical analysis results to the console
-            logger.info(f"Flatness (Horizontal): {image.get_flatness_horizontal()}")
-            logger.info(f"Flatness (Vertical):   {image.get_flatness_vertical()}")
-            logger.info(f"Symmetry (Horizontal): {image.get_symmetry_horizontal()}")
-            logger.info(f"Symmetry (Vertical):   {image.get_symmetry_vertical()}")
-            # Must Close PDF for program to complete         
-            # Display the analyzed image with pylinac overlays
-            my_img.plot_analyzed_image()
+            logger.info(f"Flatness (Horizontal): {imageModel.get_flatness_horizontal()}")
+            logger.info(f"Flatness (Vertical):   {imageModel.get_flatness_vertical()}")
+            logger.info(f"Symmetry (Horizontal): {imageModel.get_symmetry_horizontal()}")
+            logger.info(f"Symmetry (Vertical):   {imageModel.get_symmetry_vertical()}")
+            # Display Flatness and Symmetry Profiles
+            fig = imageModel.get_horizontal_profile_graph()
+            fig.savefig("horizontal_profile.png") 
+            fig = imageModel.get_vertical_profile_graph()
+            fig.savefig("vertical_profile.png") 
 
-            # Generate a PDF report with results and annotated images
-            my_img.publish_pdf(
-                filename="src/image-experimentation/brae/get-damons-working/images-and-reports/Baseline0201vsRaw0207.pdf"
-            )
+    
+    def create_graphs(self, analysis, imageModel):
+        # Horizontal profile
+        h = analysis.horiz_profile
+        fig_h, ax_h = plt.subplots()  # Create Figure and Axes
+        ax_h.plot(h.values)
+        ax_h.set_title("Horizontal Profile")
+        ax_h.set_xlabel("Pixel")
+        ax_h.set_ylabel("Intensity")
+        ax_h.grid(True)
+        imageModel.set_horizontal_profile_graph(fig_h)  # store the Figure
+        plt.close(fig_h)  # prevent automatic display
+
+        # Vertical profile
+        v = analysis.vert_profile
+        fig_v, ax_v = plt.subplots()
+        ax_v.plot(v.values)
+        ax_v.set_title("Vertical Profile")
+        ax_v.set_xlabel("Pixel")
+        ax_v.set_ylabel("Intensity")
+        ax_v.grid(True)
+        imageModel.set_vertical_profile_graph(fig_v)
+        plt.close(fig_v)
+

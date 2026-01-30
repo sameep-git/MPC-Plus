@@ -4,3 +4,4 @@ supabase==2.23.3
 numpy==1.26.4
 python-dotenv==1.0.0
 websockets>=12.0
+matplotlib>=3.7.0  
