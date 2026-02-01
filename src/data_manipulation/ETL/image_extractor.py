@@ -46,7 +46,6 @@ class image_extractor:
         out=np.zeros_like(corrected_clinical, dtype=np.float32),
         where=corrected_flood > threshold
         )
-
         img = ArrayImage(normalized, dpi = 280)
         analysis = FieldAnalysis(img)
         analysis.analyze()

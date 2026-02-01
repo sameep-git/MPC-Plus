@@ -49,15 +49,15 @@ def main():
     #         #Run, not RunTest so we can see if it makes it to the DB
     # dp.Run()
 
-    # print("----------------------6e Beam Test--------------------------------")
-    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
-    # dp = DataProcessor(path)
-    # dp.RunTest()
-
-    print("----------------------9e Beam Test--------------------------------")
-    path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0005-BeamCheckTemplate9e"
+    print("----------------------6e Beam Test--------------------------------")
+    path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
     dp = DataProcessor(path)
     dp.RunTest()
+
+    # print("----------------------9e Beam Test--------------------------------")
+    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0005-BeamCheckTemplate9e"
+    # dp = DataProcessor(path)
+    # dp.RunTest()
 
     # print("----------------------12e Beam Test--------------------------------")
     # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0006-BeamCheckTemplate12e"
