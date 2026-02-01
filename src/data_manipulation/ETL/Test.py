@@ -48,6 +48,10 @@ def main():
     # dp = DataProcessor(path)
     #         #Run, not RunTest so we can see if it makes it to the DB
     # dp.Run()
+    print("----------------------16e Beam Test--------------------------------")
+    path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0007-BeamCheckTemplate16e"
+    dp = DataProcessor(path)
+    dp.RunTest()
     
 if __name__ == "__main__":
     main()
