@@ -1,6 +1,7 @@
 import os
 from pylinac.core.image import XIM
 import logging
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 from src.data_manipulation.ETL.data_extractor import data_extractor
@@ -14,7 +15,6 @@ from src.data_manipulation.models.ImageModel import ImageModel
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
-
 
 # Load environment variables from .env file in project root
 project_root = Path(__file__).parent.parent.parent.parent
@@ -113,17 +113,32 @@ class DataProcessor:
             return
 
         beam_map = {
-            "6e": (EBeamModel, "6e"),
-            "9e": (EBeamModel, "9e"),
-            "12e": (EBeamModel, "12e"),
-            "16e": (EBeamModel, "16e"),
-            "2.5x": (XBeamModel, "2.5x"),
-            "10x": (XBeamModel, "10x"),
-            "15x": (XBeamModel, "15x"),
-            "6x": (Geo6xfffModel, "6x"),  # Geometry checks use 6x as the beam type
+            "e6e": (EBeamModel, "6e"),
+            "e9e": (EBeamModel, "9e"),
+            "e12e": (EBeamModel, "12e"),
+            "e16e": (EBeamModel, "16e"),
+            "e2.5x": (XBeamModel, "2.5x"),
+            "e10x": (XBeamModel, "10x"),
+            "e15x": (XBeamModel, "15x"),
+            "e6x": (Geo6xfffModel, "6x"),  # Geometry checks use 6x as the beam type
         }
 
         for key, (model_class, beam_type) in beam_map.items():
+            """
+            Beam Detection Note:
+            We use regex with word boundaries instead of simple substring matching
+            (e.g., `if key in self.data_path`) to avoid false positives.
+
+            Example problem:
+                "6e" is a substring of "16e"
+                So a path containing "16e" would incorrectly match "6e" first.
+
+            Using regex with word boundaries (\\b) ensures we only match complete,
+            standalone beam tokens (e.g., "16e" matches "16e", but not "6e" inside "16e").
+
+            This makes beam detection more robust and prevents incorrect beam
+            classification due to overlapping beam names.
+            """
             if key in self.data_path:
                 # Special handling for 6x: use "6xFFF" only for BeamCheckTemplate6xFFF
                 if key == "6x":

@@ -18,15 +18,15 @@ from dotenv import load_dotenv
 def main():
     load_dotenv()
     ##Unsure but i think for window the slashes are a different direction
-    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
+    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
     # dp = DataProcessor(path)
     # dp.RunTest()
     # print("----------------------15x Beam Test--------------------------------")
-    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x"
+    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0003-BeamCheckTemplate15x"
     # dp = DataProcessor(path)
     # dp.RunTest()
     # print("-------------------------Geo Check----------------------------------")
-    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch"
+    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0008-GeometryCheckTemplate6xMVkVEnhancedCouch"
     # dp = DataProcessor(path)
     # dp.RunTest()
     # print("-------------------------2.5x Beam Test----------------------------------")
@@ -34,7 +34,7 @@ def main():
     # dp = DataProcessor(path)
     # dp.RunTest()
     # print("--------------------Image Processing Test----------------------------")
-    # path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
+    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
     # dp = DataProcessor(path)
     # dp.RunTest()
     # print("--------------------Image Processing Test----------------------------")
@@ -48,10 +48,27 @@ def main():
     # dp = DataProcessor(path)
     #         #Run, not RunTest so we can see if it makes it to the DB
     # dp.Run()
-    print("----------------------16e Beam Test--------------------------------")
-    path = r"data/csv_data/NDS-WKS-SN6543-2025-09-19-07-41-49-0007-BeamCheckTemplate16e"
+
+    # print("----------------------6e Beam Test--------------------------------")
+    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0004-BeamCheckTemplate6e"
+    # dp = DataProcessor(path)
+    # dp.RunTest()
+
+    print("----------------------9e Beam Test--------------------------------")
+    path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0005-BeamCheckTemplate9e"
     dp = DataProcessor(path)
     dp.RunTest()
+
+    # print("----------------------12e Beam Test--------------------------------")
+    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0006-BeamCheckTemplate12e"
+    # dp = DataProcessor(path)
+    # dp.Run()
+    
+    
+    # print("----------------------16e Beam Test--------------------------------")
+    # path = r"data\csv_data\NDS-WKS-SN6543-2025-09-19-07-41-49-0007-BeamCheckTemplate16e"
+    # dp = DataProcessor(path)
+    # dp.RunTest()
     
 if __name__ == "__main__":
     main()
