@@ -2,8 +2,10 @@ using Api.Models;
 using Api.Repositories.Abstractions;
 using Api.Repositories.Entities;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Supabase;
 using Supabase.Postgrest.Exceptions;
+using System.Text.RegularExpressions;
 
 namespace Api.Repositories;
 
@@ -11,11 +13,32 @@ public class SupabaseBeamRepository : IBeamRepository
 {
     private readonly Client _client;
     private readonly ILogger<SupabaseBeamRepository> _logger;
+    private readonly IConfiguration _configuration;
 
-    public SupabaseBeamRepository(Client client, ILogger<SupabaseBeamRepository> logger)
+    public SupabaseBeamRepository(Client client, ILogger<SupabaseBeamRepository> logger, IConfiguration configuration)
     {
         _client = client;
         _logger = logger;
+        _configuration = configuration;
+    }
+
+    // Helper to rewrite URLs based on configuration
+    private Beam ProcessBeam(BeamEntity entity)
+    {
+        var beam = entity.ToModel();
+        var pattern = _configuration["Storage:UrlPattern"];
+        var replacement = _configuration["Storage:UrlReplacement"];
+
+        if (!string.IsNullOrEmpty(pattern) && !string.IsNullOrEmpty(replacement) && beam.ImagePaths != null)
+        {
+            var rewrittenPaths = new Dictionary<string, string>();
+            foreach (var kvp in beam.ImagePaths)
+            {
+                rewrittenPaths[kvp.Key] = Regex.Replace(kvp.Value, pattern, replacement);
+            }
+            beam.ImagePaths = rewrittenPaths;
+        }
+        return beam;
     }
 
     public async Task<IReadOnlyList<Beam>> GetAllAsync(
@@ -54,7 +77,7 @@ public class SupabaseBeamRepository : IBeamRepository
                 .Order("timestamp", Supabase.Postgrest.Constants.Ordering.Descending)
                 .Get();
 
-            return response.Models.Select(e => e.ToModel()).ToList().AsReadOnly();
+            return response.Models.Select(e => ProcessBeam(e)).ToList().AsReadOnly();
         }
         catch (Exception ex)
         {
@@ -70,7 +93,9 @@ public class SupabaseBeamRepository : IBeamRepository
         {
             var response = await _client.From<BeamEntity>()
                 .Filter("id", Supabase.Postgrest.Constants.Operator.Equals, id).Get();
-            return response.Models.FirstOrDefault()?.ToModel();
+            
+            var entity = response.Models.FirstOrDefault();
+            return entity != null ? ProcessBeam(entity) : null;
         }
         catch (Exception ex)
         {
@@ -85,7 +110,7 @@ public class SupabaseBeamRepository : IBeamRepository
         try
         {
             var response = await _client.From<BeamEntity>().Insert(BeamEntity.FromModel(beam));
-            return response.Models.First().ToModel();
+            return ProcessBeam(response.Models.First());
         }
         catch (Exception ex)
         {

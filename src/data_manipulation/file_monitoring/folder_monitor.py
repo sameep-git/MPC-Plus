@@ -101,11 +101,7 @@ class iDriveFolderHandler(FileSystemEventHandler):
             
             # Create DataProcessor instance and run processing
             logger.info(f"Processing folder: {folder_path}")
-            processor = DataProcessor(
-                folder_path, 
-                supabase_url=self.supabase_url,
-                supabase_key=self.supabase_key
-            )
+            processor = DataProcessor(folder_path)
             processor.Run()
             
             logger.info(f"Successfully processed folder: {folder_path}")
@@ -165,14 +161,8 @@ class FolderMonitor:
             self.idrive_paths = [os.path.abspath(idrive_path)]
         
         self.observers = []  # List of observers for multiple paths
-        self.handler = iDriveFolderHandler()
-            idrive_path (str): Path to the iDrive folder to monitor
-            supabase_url (str, optional): Supabase URL for uploads
-            supabase_key (str, optional): Supabase API key for uploads
+        self.handler = iDriveFolderHandler(supabase_url=supabase_url, supabase_key=supabase_key)
         
-#         self.idrive_path = os.path.abspath(idrive_path)
-#         self.observer = Observer()
-#         self.handler = iDriveFolderHandler(supabase_url, supabase_key)
         self.is_running = False
         
     def start_monitoring(self):
