@@ -22,18 +22,18 @@ def is_ebeam_folder(folder_path):
     return '6e' in folder_name or '16e' in folder_name or 'BeamCheckTemplate' in folder_name
 
 
-def extract_ebeam_values(folder_path):
+def extract_ebeam_values(xml_path):
     """
     Extract relative output and relative uniformity from e-beam Results.xml
     
     Args:
-        folder_path: Path to the folder containing Results.xml
+        xml_path: Path to the Results.xml file
         
     Returns:
         tuple: (output_percentage, uniformity_percentage) or (None, None) if extraction fails
     """
     # Try to resolve path - if relative path doesn't exist, try relative to MPC-Plus
-    if not os.path.exists(folder_path):
+    if not os.path.exists(xml_path):
         # Try relative to MPC-Plus folder (common parent directory)
         # Navigate up from current script: ETL -> data_manipulation -> src -> MPC-Plus
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -41,8 +41,8 @@ def extract_ebeam_values(folder_path):
         
         # Try multiple possible locations
         possible_paths = [
-            os.path.join(mpc_plus_dir, folder_path),  # Directly in MPC-Plus
-            os.path.join(mpc_plus_dir, 'data', 'csv_data', folder_path)  # In data/csv_data subdirectory
+            os.path.join(mpc_plus_dir, xml_path),  # Directly in MPC-Plus
+            os.path.join(mpc_plus_dir, 'data', 'csv_data', xml_path)  # In data/csv_data subdirectory
         ]
         
         found_path = None
@@ -52,26 +52,18 @@ def extract_ebeam_values(folder_path):
                 break
         
         if found_path:
-            folder_path = found_path
+            xml_path = found_path
         else:
-            print(f"Error: Folder not found: {folder_path}")
+            print(f"Error: XML file not found: {xml_path}")
             return None, None
     
-    # Construct path to Results.xml file
-    results_path = os.path.join(folder_path, "Results.xml")
-    
-    # Validate that Results.xml exists
-    if not os.path.exists(results_path):
-        print(f"Error: Results.xml not found in {folder_path}")
-        return None, None
-    
-    # Validate that this is an e-beam folder
-    if not is_ebeam_folder(folder_path):
-        print(f"Error: Not an e-beam folder")
+    # Validate that Results.xml exists at the given path
+    if not os.path.exists(xml_path) or not os.path.isfile(xml_path):
+        print(f"Error: Results.xml not found at {xml_path}")
         return None, None
     
     # Parse the XML file
-    tree = ET.parse(results_path)
+    tree = ET.parse(xml_path)
     root = tree.getroot()
     
     # Initialize variables to store extracted values
@@ -110,11 +102,11 @@ def extract_ebeam_values(folder_path):
 if __name__ == "__main__":
     # Command-line interface for testing the extractor
     if len(sys.argv) < 2:
-        print("Usage: ebeam_extractor.py <folder_path>")
+        print("Usage: ebeam_extractor.py <results_xml_path>")
         sys.exit(1)
     
-    folder_path = sys.argv[1]
-    output, uniformity = extract_ebeam_values(folder_path)
+    xml_path = sys.argv[1]
+    output, uniformity = extract_ebeam_values(xml_path)
     
     # Display results if extraction was successful
     if output is not None and uniformity is not None:
